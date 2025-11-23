@@ -22,7 +22,6 @@ public enum AudioFileType: String, Hashable, Codable, CaseIterable {
     case mp3
     case mp4
     case opus
-    case sd2
     case snd
     case ts
     case wav
@@ -177,7 +176,6 @@ public enum AudioFileType: String, Hashable, Codable, CaseIterable {
         case .m4a:  return kAudioFileM4AType
         case .mp3:  return kAudioFileMP3Type
         case .mp4:  return kAudioFileMPEG4Type
-        case .sd2:  return kAudioFileSoundDesigner2Type
         case .w64:  return kAudioFileWave64Type
         case .wav:  return kAudioFileWAVEType
         default:

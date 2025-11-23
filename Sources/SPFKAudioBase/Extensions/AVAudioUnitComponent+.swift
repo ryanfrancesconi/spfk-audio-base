@@ -2,15 +2,19 @@
 
 import AVFoundation
 
+#if os(macOS)
+    extension AVAudioUnitComponent {
+        public var supportsStereo: Bool {
+            supportsNumberInputChannels(2, outputChannels: 2)
+        }
+
+        public var supportsMono: Bool {
+            supportsNumberInputChannels(1, outputChannels: 1)
+        }
+    }
+#endif // os(macOS)
+
 extension AVAudioUnitComponent {
-    public var supportsStereo: Bool {
-        supportsNumberInputChannels(2, outputChannels: 2)
-    }
-
-    public var supportsMono: Bool {
-        supportsNumberInputChannels(1, outputChannels: 1)
-    }
-
     public var resolvedName: String {
         if name == "" {
             return manufacturerName + " " + typeName

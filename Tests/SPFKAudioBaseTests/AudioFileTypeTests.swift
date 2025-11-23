@@ -29,13 +29,16 @@ class AudioFileTypeTests: BinTestCase {
             kAudioFileMPEG4Type,
             kAudioFileNextType,
             kAudioFileRF64Type,
-            kAudioFileSoundDesigner2Type,
             kAudioFileWave64Type,
             kAudioFileWAVEType,
+            // kAudioFileSoundDesigner2Type, // not on iOS
         ]
 
-        let names = ids.compactMap {
-            try? AudioFileType.getFileTypeName(propertyId: $0)
+        var names: [String] = .init()
+
+        for id in ids {
+            let fileTypeName = try AudioFileType.getFileTypeName(propertyId: id)
+            names.append(fileTypeName)
         }
 
         #expect(names.count == ids.count)

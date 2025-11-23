@@ -63,7 +63,7 @@ extension AudioFileType {
             &ioDataSize,
             outPropertyData
         ) else {
-            throw NSError(description: "kAudioFileGlobalInfo_FileTypeName failed for id \(inSpecifier)")
+            throw NSError(description: "kAudioFileGlobalInfo_FileTypeName failed for id \(inSpecifier.fourCC)")
         }
 
         defer { outPropertyData.deallocate() }

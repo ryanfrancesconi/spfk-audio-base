@@ -12,7 +12,7 @@ extension AVAudioNode: @retroactive TypeDescribable {
     }
 
     public var ioConnectionDescription: String {
-        let name = auAudioUnit.audioUnitName ?? className
+        let name = auAudioUnit.audioUnitName ?? typeName
 
         guard let engine else {
             return "\(name) <engine is nil> → 🔇"

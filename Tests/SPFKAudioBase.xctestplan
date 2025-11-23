@@ -1,0 +1,25 @@
+{
+  "configurations" : [
+    {
+      "id" : "AB79F6D3-D935-4CB6-9C5F-992CD7D24EF5",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "performanceAntipatternCheckerEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "SPFKAudioBaseTests",
+        "name" : "SPFKAudioBaseTests"
+      }
+    }
+  ],
+  "version" : 1
+}
