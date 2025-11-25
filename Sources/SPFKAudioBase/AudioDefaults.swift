@@ -8,8 +8,7 @@ public actor AudioDefaults {
     ) ?? AVAudioFormat()
 
     public static let shared = AudioDefaults()
-    private init() {
-    }
+    private init() {}
 
     public private(set) var minimumSampleRateSupported: Double = 44100
     public private(set) var enforceMinimumSamplateRate = false
