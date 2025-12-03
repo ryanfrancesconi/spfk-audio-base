@@ -1,7 +1,7 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/SPFKAudio
 
-import AVFoundation
 import Accelerate
+import AVFoundation
 import SPFKBase
 
 extension AVAudioPCMBuffer {
@@ -25,16 +25,16 @@ extension AVAudioPCMBuffer {
         return value
     }
 
-    /// Returns internal buffer as an `Array` of swift `Float` Arrays.
+    /// Copies internal buffer to an `Array` of swift `Float` Arrays if `floatChannelData`
+    /// is valid.
     ///
     /// - `floatData?[X]` will contain an Array of channel length samples as `Float`
     public var floatData: FloatChannelData? {
-        // Do we have PCM channel data?
         guard let floatChannelData else { return nil }
 
         let channelCount = Int(format.channelCount)
         let length = Int(frameLength)
-        var result = newFloatChannelData(channelCount: channelCount, length: length)
+        var result = allocateFloatChannelData(length: length, channelCount: channelCount)
 
         for n in 0 ..< channelCount {
             for i in 0 ..< length {
