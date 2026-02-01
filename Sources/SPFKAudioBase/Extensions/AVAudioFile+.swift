@@ -4,19 +4,54 @@ import AVFoundation
 import SPFKBase
 
 extension AVAudioFile {
+    public var audioStreamBasicDescription: AudioStreamBasicDescription? {
+        fileFormat.formatDescription.audioStreamBasicDescription
+    }
+
     /// Duration in seconds
     public var duration: TimeInterval {
         TimeInterval(length) / fileFormat.sampleRate
     }
 
-    /// Estimated data rate in kbps
-    public var dataRate: Double? {
+    /// Estimated data rate in kbps.
+    /// Not especially accurate for compressed files.
+    public var dataRate: Float? {
+        if audioStreamBasicDescription?.mFormatID == kAudioFormatLinearPCM {
+            let bitrate = fileFormat.sampleRate *
+                Double(fileFormat.channelCount) *
+                Double(fileFormat.bitsPerChannel)
+
+            return Float(bitrate / 1000)
+        }
+
         guard duration > 0,
-            let fileSize = url.fileSize
+              let fileSize = url.fileSize
         else { return nil }
 
         let fileSizeInBits = fileSize * 8 // Convert bytes to bits
-        return Double(fileSizeInBits) / duration / 1000
+
+        return Float(fileSizeInBits) / Float(duration) / 1000
+    }
+
+    /// The estimated data rate when available in kbps. Generally accurate for
+    /// compressed files such as mp3 or m4a but back on dataRate for PCM, FLAC or OGG.
+    public func estimatedDataRate() async throws -> Float {
+        let asset = AVAsset(url: url)
+
+        let tracks = try await asset.loadTracks(withMediaType: .audio)
+
+        guard let audioTrack = tracks.first else {
+            throw NSError(description: "Failed to get audio track from asset")
+        }
+
+        // only works with compressed audio
+        let estimatedDataRate = try await audioTrack.load(.estimatedDataRate)
+
+        if estimatedDataRate > 0 {
+            return estimatedDataRate / 1000
+        }
+
+        return dataRate ?? 0
     }
 
     /// Convenience init to write file from an AVAudioPCMBuffer. Will overwrite.
