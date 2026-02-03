@@ -4,14 +4,14 @@ import SwiftExtensions
 
 public struct LoudnessDescription: Comparable, Hashable, Sendable {
     public static func < (lhs: LoudnessDescription, rhs: LoudnessDescription) -> Bool {
-        guard let lhs = lhs.loudnessValue,
-              let rhs = rhs.loudnessValue else { return false }
+        guard let lhs = lhs.loudnessIntegrated,
+              let rhs = rhs.loudnessIntegrated else { return false }
 
         return lhs < rhs
     }
 
     /// Integrated Loudness Value of the file in LUFS dB. (Note: Added in version 2.)
-    public var loudnessValue: Float64?
+    public var loudnessIntegrated: Float64?
 
     /// Loudness Range of the file in LU. (Note: Added in version 2.)
     public var loudnessRange: Float64?
@@ -25,42 +25,90 @@ public struct LoudnessDescription: Comparable, Hashable, Sendable {
     /// highest value of the Short-term Loudness Level of the file in LUFS dB. (Note: Added in version 2.)
     public var maxShortTermLoudness: Float64?
 
-    /// A summary suitable for displaying in a UI
-    public var shortDescription: String {
+    /// A summary string of all values
+    public var stringValue: String {
         var out = ""
 
-        let lufsString = loudnessValue?.string(decimalPlaces: 1) ?? "N/A"
-        out += "\(lufsString) LUFS, "
+        let lufsString = loudnessIntegrated?.string(decimalPlaces: 1) ?? "N/A"
+        out += "I \(lufsString) LUFS, "
 
         let truePeakString = maxTruePeakLevel?.string(decimalPlaces: 1) ?? "N/A"
-        out += "\(truePeakString) dBTP, "
+        out += "TP \(truePeakString) dB, "
 
-        let loudnessRangeValue: Float64? = loudnessRange == 0 ? nil : loudnessRange
-        let loudnessRangeString = loudnessRangeValue?.string(decimalPlaces: 1) ?? "N/A"
-        out += "\(loudnessRangeString) LRA"
+        let loudnessRangeString = loudnessRange?.string(decimalPlaces: 1) ?? "N/A"
+        out += "LRA \(loudnessRangeString) LU"
+
+        if let value = maxMomentaryLoudness?.string(decimalPlaces: 1) {
+            out += ", M \(value) LU"
+        }
+
+        if let value = maxShortTermLoudness?.string(decimalPlaces: 1) {
+            out += ", S \(value) LU"
+        }
 
         return out
     }
 
     public init(
-        loudnessValue: Float64? = nil,
+        loudnessIntegrated: Float64? = nil,
         loudnessRange: Float64? = nil,
         maxTruePeakLevel: Float32? = nil,
         maxMomentaryLoudness: Float64? = nil,
         maxShortTermLoudness: Float64? = nil
     ) {
-        self.loudnessValue = loudnessValue
+        self.loudnessIntegrated = loudnessIntegrated
         self.loudnessRange = loudnessRange
         self.maxTruePeakLevel = maxTruePeakLevel
         self.maxMomentaryLoudness = maxMomentaryLoudness
         self.maxShortTermLoudness = maxShortTermLoudness
     }
+
+    /// 0x7fff might be used to designate an unused value
+    /// valid audio range in spec is: -99.99 ... 99.99
+    /// invalid = 0x7FFF / 100 // 327.67 (short.max)
+    static func isValid(value: some BinaryFloatingPoint & Comparable) -> Bool {
+        (-99.99 ... 99.99).contains(value)
+    }
+
+    public func validated() -> LoudnessDescription {
+        var desc = self
+
+        if let value = loudnessIntegrated, !Self.isValid(value: value) {
+            desc.loudnessIntegrated = nil
+        }
+
+        if let value = loudnessRange, !Self.isValid(value: value) {
+            desc.loudnessRange = nil
+        }
+
+        if let value = maxTruePeakLevel, !Self.isValid(value: value) {
+            desc.maxTruePeakLevel = nil
+        }
+
+        if let value = maxMomentaryLoudness, !Self.isValid(value: value) {
+            desc.maxMomentaryLoudness = nil
+        }
+
+        if let value = maxShortTermLoudness, !Self.isValid(value: value) {
+            desc.maxShortTermLoudness = nil
+        }
+
+        return desc
+    }
+
+    // don't check LRA here, a value of zero is valid
+    public var isValid: Bool {
+        loudnessIntegrated != nil ||
+            maxTruePeakLevel != nil ||
+            maxMomentaryLoudness != nil ||
+            maxShortTermLoudness != nil
+    }
 }
 
 extension LoudnessDescription: Codable {
     enum CodingKeys: String, CodingKey {
+        case loudnessIntegrated
         case loudnessRange
-        case loudnessValue
         case maxMomentaryLoudness
         case maxShortTermLoudness
         case maxTruePeakLevel
@@ -69,7 +117,7 @@ extension LoudnessDescription: Codable {
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        loudnessValue = try? container.decodeIfPresent(Float64.self, forKey: .loudnessValue)
+        loudnessIntegrated = try? container.decodeIfPresent(Float64.self, forKey: .loudnessIntegrated)
         loudnessRange = try? container.decodeIfPresent(Float64.self, forKey: .loudnessRange)
         maxTruePeakLevel = try? container.decodeIfPresent(Float32.self, forKey: .maxTruePeakLevel)
         maxMomentaryLoudness = try? container.decodeIfPresent(Float64.self, forKey: .maxMomentaryLoudness)
@@ -79,7 +127,7 @@ extension LoudnessDescription: Codable {
     public func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
 
-        try? container.encodeIfPresent(loudnessValue, forKey: .loudnessValue)
+        try? container.encodeIfPresent(loudnessIntegrated, forKey: .loudnessIntegrated)
         try? container.encodeIfPresent(loudnessRange, forKey: .loudnessRange)
         try? container.encodeIfPresent(maxTruePeakLevel, forKey: .maxTruePeakLevel)
         try? container.encodeIfPresent(maxMomentaryLoudness, forKey: .maxMomentaryLoudness)
@@ -87,35 +135,38 @@ extension LoudnessDescription: Codable {
     }
 }
 
-extension LoudnessDescription {
-    public static func averageLoudness(from array: [LoudnessDescription]) -> LoudnessDescription {
+extension [LoudnessDescription] {
+    /// Create a single average object representing all values
+    public var average: LoudnessDescription {
         var out = LoudnessDescription()
 
-        guard array.isNotEmpty else {
+        let values = self.map { $0.validated() }.filter(\.isValid)
+
+        guard values.isNotEmpty else {
             return out
         }
 
-        let loudnessValue = array.compactMap(\.loudnessValue).filter { !$0.isInfinite }
+        let loudnessValue = values.compactMap(\.loudnessIntegrated)
         if loudnessValue.count > 0 {
-            out.loudnessValue = loudnessValue.reduce(0, +) / Float64(loudnessValue.count)
+            out.loudnessIntegrated = loudnessValue.reduce(0, +) / Float64(loudnessValue.count)
         }
 
-        let loudnessRange = array.compactMap(\.loudnessRange)
+        let loudnessRange = values.compactMap(\.loudnessRange)
         if loudnessRange.count > 0 {
             out.loudnessRange = loudnessRange.reduce(0, +) / Float64(loudnessRange.count)
         }
 
-        let truePeak = array.compactMap(\.maxTruePeakLevel)
+        let truePeak = values.compactMap(\.maxTruePeakLevel)
         if truePeak.count > 0 {
             out.maxTruePeakLevel = truePeak.reduce(0, +) / Float32(truePeak.count)
         }
 
-        let maxMomentaryLoudness = array.compactMap(\.maxMomentaryLoudness)
+        let maxMomentaryLoudness = values.compactMap(\.maxMomentaryLoudness)
         if maxMomentaryLoudness.count > 0 {
             out.maxMomentaryLoudness = maxMomentaryLoudness.reduce(0, +) / Float64(maxMomentaryLoudness.count)
         }
 
-        let maxShortTermLoudness = array.compactMap(\.maxShortTermLoudness)
+        let maxShortTermLoudness = values.compactMap(\.maxShortTermLoudness)
         if maxShortTermLoudness.count > 0 {
             out.maxShortTermLoudness = maxShortTermLoudness.reduce(0, +) / Float64(maxShortTermLoudness.count)
         }
