@@ -2,7 +2,7 @@ import Foundation
 import SPFKBase
 
 public struct Bpm: Equatable, Sendable, Comparable, Hashable {
-    public static let _60bpm = (try? Bpm(60))!
+    public static let _60bpm = Bpm(60)!
 
     public static func < (lhs: Bpm, rhs: Bpm) -> Bool {
         lhs.rawValue < rhs.rawValue
@@ -24,10 +24,12 @@ public struct Bpm: Equatable, Sendable, Comparable, Hashable {
         rawValue.truncatingRemainder(dividingBy: 1) == 0
     }
 
-    public init(_ rawValue: Double) throws {
+    public init?(_ rawValue: Double) {
         guard rawValue > 0 else {
-            throw NSError(description: "Bpm must be a positive value > 0")
+            assertionFailure("Bpm must be a positive value > 0")
+            return nil
         }
+
         self.rawValue = rawValue
 
         multiples = [0.125, 0.25, 0.5, 1, 2, 4, 8].map {
@@ -37,7 +39,7 @@ public struct Bpm: Equatable, Sendable, Comparable, Hashable {
 
     /// x8 to /8 values, E.g., 80 Bpm == 160 Bpm/
     public func isMultiple(of rhs: Double) -> Bool {
-        guard let testValue = try? Bpm(rhs) else { return false }
+        guard let testValue = Bpm(rhs) else { return false }
 
         return isMultiple(of: testValue)
     }
@@ -55,9 +57,8 @@ extension Bpm: CustomStringConvertible {
 }
 
 extension [Bpm] {
-    
     public var average: Bpm? {
         let value = map(\.rawValue).averaged.rounded(.toNearestOrEven)
-        return try? Bpm(value)
+        return Bpm(value)
     }
 }
