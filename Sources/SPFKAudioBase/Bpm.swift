@@ -2,7 +2,7 @@ import Foundation
 import SPFKBase
 
 public struct Bpm: Equatable, Sendable, Comparable, Hashable {
-    public static let _60 = (try? Bpm(60))!
+    public static let _60bpm = (try? Bpm(60))!
 
     public static func < (lhs: Bpm, rhs: Bpm) -> Bool {
         lhs.rawValue < rhs.rawValue
