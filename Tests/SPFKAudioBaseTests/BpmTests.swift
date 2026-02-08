@@ -6,8 +6,8 @@ import SPFKTesting
 import Testing
 
 final class BpmTests {
-    @Test func isMultiple() {
-        let _80 = Bpm(80)
+    @Test func isMultiple() async throws {
+        let _80 = try Bpm(80)
         #expect(_80.isMultiple(of: 20))
         #expect(_80.isMultiple(of: 40))
         #expect(_80.isMultiple(of: 80))
