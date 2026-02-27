@@ -2,9 +2,9 @@ import Foundation
 
 /// Track results and determine the most frequent entry.
 public struct CountableResult<T: Hashable & Sendable>: ExpressibleByArrayLiteral {
-    private var results: [T] = []
-    private var suggestedValue: T?
-    private var matchesRequired: Int?
+    public private(set) var results: [T] = []
+    public private(set) var suggestedValue: T?
+    public var matchesRequired: Int?
 
     public init(arrayLiteral elements: T...) {
         results = elements
@@ -34,16 +34,28 @@ public struct CountableResult<T: Hashable & Sendable>: ExpressibleByArrayLiteral
 
     public func mostLikely() -> T? {
         if let suggestedValue { return suggestedValue }
+
         guard !results.isEmpty else { return nil }
 
         return Self.mostLikely(from: results)
     }
 
     static func mostLikely(from results: [T]) -> T? {
-        let frequencyMap = results.reduce(into: [:]) { counts, value in
+        let frequencyMap: [T: Int] = results.reduce(into: [:]) { counts, value in
             counts[value, default: 0] += 1
         }
 
-        return frequencyMap.max { $0.value < $1.value }?.key
+        // Find the highest frequency count
+        guard let maxCount = frequencyMap.values.max() else { return nil }
+
+        // Filter for all keys that share that maxCount
+        let candidates = frequencyMap.filter { $0.value == maxCount }.map(\.key)
+
+        // if there's more than one, pick the one that appeared first in the original array
+        if candidates.count > 1 {
+            return results.first { candidates.contains($0) }
+        }
+
+        return candidates.first
     }
 }
