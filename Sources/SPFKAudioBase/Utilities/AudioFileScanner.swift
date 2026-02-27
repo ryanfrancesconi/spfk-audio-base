@@ -87,19 +87,22 @@ public struct AudioFileScanner: Sendable {
 
         while currentFrame < totalFrames {
             try Task.checkCancellation()
-
-            audioFile.framePosition = currentFrame
-
             let progress: UnitInterval = Double(currentFrame) / totalFramesDouble
             await send(progress: progress)
 
-            try audioFile.read(into: buffer, frameCount: framesPerBuffer)
+            audioFile.framePosition = currentFrame
+
+            currentFrame += AVAudioFramePosition(framesPerBuffer)
+
+            do {
+                try audioFile.read(into: buffer, frameCount: framesPerBuffer)
+            } catch {
+                continue
+            }
 
             if let rawData = buffer.floatChannelData {
                 await send(samples: rawData)
             }
-
-            currentFrame += AVAudioFramePosition(framesPerBuffer)
 
             // buffer has reached end of file, trim it
             if currentFrame + AVAudioFramePosition(framesPerBuffer) > totalFrames {
