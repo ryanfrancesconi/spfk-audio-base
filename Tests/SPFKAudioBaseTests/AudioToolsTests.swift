@@ -1,10 +1,11 @@
 import AVFoundation
 import Foundation
 import Numerics
-@testable import SPFKAudioBase
 import SPFKBase
 import SPFKTesting
 import Testing
+
+@testable import SPFKAudioBase
 
 @Suite(.tags(.file))
 final class AudioToolsTests: BinTestCase {

@@ -4,25 +4,21 @@ import AVFoundation
 import Foundation
 import SPFKBase
 
-public typealias AudioAnalysisEventHandler = @Sendable (AudioAnalysisEvent) async -> Void
-
-public enum AudioAnalysisEvent {
-    case progress(url: URL, value: UnitInterval)
-    case periodicProgress(url: URL, value: UnitInterval)
-
-    case data(format: AVAudioFormat, length: AVAudioFrameCount, samples: UnsafeMutablePointer<Float>)
-    case complete(url: URL)
-}
-
-public struct AudioFileDataAnalysis: Sendable {
+public struct AudioFileScanner: Sendable {
     private let bufferDuration: TimeInterval
     private var sendPeriodicProgressEvery: UInt32
-    private let eventHandler: AudioAnalysisEventHandler
+    private let eventHandler: AudioFileScannerEventHandler
 
+    /// Prepare to scan a file
+    /// - Parameters:
+    ///   - bufferDuration: The duration of each buffer returned
+    ///   - sendPeriodicProgressEvery: Sends this event after this time in samples has been processed.
+    ///   not the amount of time elapsed processing.
+    ///   - eventHandler: Events will be send async
     public init(
         bufferDuration: TimeInterval = 0.2,
         sendPeriodicProgressEvery: TimeInterval = 4,
-        eventHandler: @escaping AudioAnalysisEventHandler
+        eventHandler: @escaping AudioFileScannerEventHandler
     ) {
         self.bufferDuration = max(0.1, bufferDuration)
         self.sendPeriodicProgressEvery = UInt32(max(1, sendPeriodicProgressEvery))
@@ -44,14 +40,12 @@ public struct AudioFileDataAnalysis: Sendable {
             audioFile.framePosition = currentFrame
         }
 
-        try await _progress(audioFile: audioFile)
-
-        // let bpm = try chooseMostLikelyBpm(from: results)
+        try await _process(audioFile: audioFile)
 
         await eventHandler(.complete(url: audioFile.url))
     }
 
-    private func _progress(audioFile: AVAudioFile) async throws {
+    private func _process(audioFile: AVAudioFile) async throws {
         let url = audioFile.url
         let totalFrames = AVAudioFrameCount(audioFile.length)
         let totalFramesDouble = Double(totalFrames)
@@ -68,8 +62,6 @@ public struct AudioFileDataAnalysis: Sendable {
             framesPerBuffer = totalFrames
         }
 
-        Log.debug(pcmFormat)
-
         guard
             let buffer = AVAudioPCMBuffer(
                 pcmFormat: pcmFormat,
@@ -85,14 +77,11 @@ public struct AudioFileDataAnalysis: Sendable {
         let performCheckAt: AVAudioFrameCount = AVAudioFrameCount(pcmFormat.sampleRate) * sendPeriodicProgressEvery
         var framesSinceLastDetect: AVAudioFrameCount = 0
 
-//        var results: [Bpm] = []
-//        let bpmDetect: DetectTempo = .init(format: pcmFormat)
-
         func send(progress: UnitInterval) async {
             await eventHandler(.progress(url: url, value: progress))
         }
 
-        func send(samples: UnsafeMutablePointer<Float>) async {
+        func send(samples: UnsafePointer<UnsafeMutablePointer<Float>>) async {
             await eventHandler(.data(format: pcmFormat, length: framesPerBuffer, samples: samples))
         }
 
@@ -108,14 +97,9 @@ public struct AudioFileDataAnalysis: Sendable {
             try audioFile.read(into: buffer, frameCount: framesPerBuffer)
 
             if let rawData = buffer.floatChannelData {
-                let samples: UnsafeMutablePointer<Float> = rawData.pointee
+                // let samples: UnsafeMutablePointer<Float> = rawData.pointee
 
-                await send(samples: samples)
-
-//                bpmDetect.process(
-//                    rawData.pointee,
-//                    numberOfSamples: buffer.frameLength.int32
-//                )
+                await send(samples: rawData)
             }
 
             currentFrame += AVAudioFramePosition(framesPerBuffer)
@@ -132,48 +116,19 @@ public struct AudioFileDataAnalysis: Sendable {
             if framesSinceLastDetect > performCheckAt {
                 await eventHandler(.periodicProgress(url: url, value: progress))
 
-                // Send Event
-
-//                let value = bpmDetect.getBpm().double.rounded(.toNearestOrAwayFromZero)
-//
-//                if value > 0, let bpm = Bpm(value) {
-//                    results.append(bpm)
-//
-//                    Log.debug(progress, "\(audioFile.url.lastPathComponent) bpm @ \(currentFrame)", bpm)
-//
-//                    let count = results.count(of: bpm)
-//
-//                    if let matchesRequired, count >= matchesRequired {
-//                        Log.debug("Returning early found \(count) duplicates of", bpm)
-//                        return results
-//                    }
-//                }
-
                 framesSinceLastDetect = 0
             }
         }
-
-//        return results
     }
+}
 
-//    func chooseMostLikelyBpm(from bpms: [Bpm]) throws -> Bpm {
-//        guard bpms.isNotEmpty else {
-//            throw NSError(description: "failed to detect bpm")
-//        }
-//
-//        // order bpms by how many repeat values there are
-//        let frequencyMap: [(key: Bpm, value: Int)] = bpms.reduce(into: [:]) { counts, value in
-//            counts[value, default: 0] += 1
-//        }.sorted { lhs, rhs in
-//            lhs.value > rhs.value
-//        }
-//
-//        guard let value = frequencyMap.first else {
-//            throw NSError(description: "failed to detect bpm")
-//        }
-//
-//        Log.debug("sorted results:", frequencyMap)
-//
-//        return value.key
-//    }
+/// Event handler for scanning audio data
+public typealias AudioFileScannerEventHandler = @Sendable (AudioFileScannerEvent) async -> Void
+
+/// Note: This event can't be Sendable due to the raw samples in the .data() case
+public enum AudioFileScannerEvent {
+    case progress(url: URL, value: UnitInterval)
+    case periodicProgress(url: URL, value: UnitInterval)
+    case data(format: AVAudioFormat, length: AVAudioFrameCount, samples: UnsafePointer<UnsafeMutablePointer<Float>>)
+    case complete(url: URL)
 }
