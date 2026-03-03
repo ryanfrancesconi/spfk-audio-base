@@ -10,8 +10,9 @@ public enum AudioTools {
         guard input.exists else {
             throw NSError(description: "\(input.path) is missing")
         }
-
-        let tmpname = input.deletingPathExtension().lastPathComponent + "_\(UUID())"
+        
+        let pathExtension = input.pathExtension
+        let tmpname = input.deletingPathExtension().lastPathComponent + "_\(UUID()).\(pathExtension)"
         let tmpfile = input.deletingLastPathComponent().appendingPathComponent(tmpname)
 
         let output = try await createLoopedAudio(input: input, output: tmpfile, minimumDuration: minimumDuration)
