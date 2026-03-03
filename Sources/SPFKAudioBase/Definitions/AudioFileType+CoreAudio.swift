@@ -16,6 +16,7 @@ extension AudioFileType {
         let inSpecifierSize = UInt32(MemoryLayout<OSType>.size)
         var ioDataSize = UInt32(MemoryLayout<CFString>.size)
         let outPropertyData = UnsafeMutablePointer<CFArray>.allocate(capacity: 1)
+        defer { outPropertyData.deallocate() }
 
         let err: OSStatus = AudioFileGetGlobalInfo(
             kAudioFileGlobalInfo_ExtensionsForType,
@@ -28,8 +29,6 @@ extension AudioFileType {
         guard err == noErr else {
             throw NSError(description: "kAudioFileGlobalInfo_ExtensionsForType failed for \(url.lastPathComponent), error: \(err)")
         }
-
-        defer { outPropertyData.deallocate() }
 
         // cast CFArray to NSArray
         let nsArray = outPropertyData.pointee as NSArray
@@ -55,6 +54,7 @@ extension AudioFileType {
         let inSpecifierSize = UInt32(MemoryLayout<AudioFilePropertyID>.size)
         var ioDataSize = UInt32(MemoryLayout<CFString>.size)
         let outPropertyData = UnsafeMutablePointer<CFString>.allocate(capacity: 1)
+        defer { outPropertyData.deallocate() }
 
         guard noErr == AudioFileGetGlobalInfo(
             kAudioFileGlobalInfo_FileTypeName,
@@ -65,8 +65,6 @@ extension AudioFileType {
         ) else {
             throw NSError(description: "kAudioFileGlobalInfo_FileTypeName failed for id \(inSpecifier.fourCC)")
         }
-
-        defer { outPropertyData.deallocate() }
 
         return outPropertyData.pointee as String
     }

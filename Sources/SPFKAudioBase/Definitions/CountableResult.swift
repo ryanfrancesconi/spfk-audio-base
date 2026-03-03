@@ -19,6 +19,9 @@ public struct CountableResult<T: Hashable & Sendable>: ExpressibleByArrayLiteral
     /// Each entry tracks a representative value and its running count.
     private var groups: [(representative: T, count: Int)] = []
 
+    /// Maintained incrementally when `isMatch` is nil for O(1) counting.
+    private var frequencyMap: [T: Int] = [:]
+
     public init(arrayLiteral elements: T...) {
         results = elements
         isMatch = nil
@@ -62,7 +65,8 @@ public struct CountableResult<T: Hashable & Sendable>: ExpressibleByArrayLiteral
                 count = 1
             }
         } else {
-            count = results.count(where: { $0 == value })
+            frequencyMap[value, default: 0] += 1
+            count = frequencyMap[value]!
         }
 
         if let matchesRequired, count >= matchesRequired {
@@ -82,15 +86,16 @@ public struct CountableResult<T: Hashable & Sendable>: ExpressibleByArrayLiteral
             return chooseFromGroups(tieBreakerWeight: tieBreakerWeight)
         }
 
-        let frequencyMap: [T: Int] = results.reduce(into: [:]) { counts, value in
-            counts[value, default: 0] += 1
-        }
+        // Use incrementally maintained frequencyMap if available, otherwise build one
+        let map: [T: Int] = frequencyMap.isEmpty
+            ? results.reduce(into: [:]) { counts, value in counts[value, default: 0] += 1 }
+            : frequencyMap
 
         // Find the highest frequency count
-        guard let maxCount = frequencyMap.values.max() else { return nil }
+        guard let maxCount = map.values.max() else { return nil }
 
         // Filter for all keys that share that maxCount
-        let candidates = frequencyMap.filter { $0.value == maxCount }.map(\.key)
+        let candidates = map.filter { $0.value == maxCount }.map(\.key)
 
         // if there's more than one, pick the one that appeared first in the original array
         if candidates.count > 1 {

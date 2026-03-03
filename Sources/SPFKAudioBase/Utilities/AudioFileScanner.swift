@@ -81,8 +81,8 @@ public struct AudioFileScanner: Sendable {
             await eventHandler(.progress(url: url, value: progress))
         }
 
-        func send(samples: UnsafePointer<UnsafeMutablePointer<Float>>) async {
-            await eventHandler(.data(format: pcmFormat, length: framesPerBuffer, samples: samples))
+        func send(samples: UnsafePointer<UnsafeMutablePointer<Float>>, length: AVAudioFrameCount) async {
+            await eventHandler(.data(format: pcmFormat, length: length, samples: samples))
         }
 
         while currentFrame < totalFrames {
@@ -101,7 +101,7 @@ public struct AudioFileScanner: Sendable {
             }
 
             if let rawData = buffer.floatChannelData {
-                await send(samples: rawData)
+                await send(samples: rawData, length: buffer.frameLength)
             }
 
             // buffer has reached end of file, trim it
