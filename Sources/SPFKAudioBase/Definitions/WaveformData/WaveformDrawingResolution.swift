@@ -37,10 +37,7 @@ public enum WaveformDrawingResolution: CaseIterable, Equatable, Codable, Sendabl
         case 2 ..< 10:
             self = .veryHigh
 
-        case 10 ..< 60:
-            self = .high
-
-        case 60 ..< 120:
+        case 10 ..< 120:
             self = .high
 
         case 120...:
@@ -60,26 +57,24 @@ public enum WaveformDrawingResolution: CaseIterable, Equatable, Codable, Sendabl
             return
         }
 
-        let low = Self.low.samplesPerPoint
-        let medium = Self.medium.samplesPerPoint
-        let high = Self.high.samplesPerPoint
-        let veryHigh = Self.veryHigh.samplesPerPoint
-
+        // samplesPerPoint: low=128, medium=64, high=32, veryHigh=16, lossless=1
+        // Higher samplesPerPoint means lower resolution.
+        // Bucket non-exact values to the nearest preset.
         switch samplesPerPoint {
-        case low ..< medium:
+        case Self.low.samplesPerPoint...:
             self = .low
 
-        case medium ..< high:
+        case Self.medium.samplesPerPoint...:
             self = .medium
 
-        case high ..< veryHigh:
+        case Self.high.samplesPerPoint...:
             self = .high
 
-        case veryHigh...:
+        case Self.veryHigh.samplesPerPoint...:
             self = .veryHigh
 
         default:
-            self = .medium
+            self = .lossless
         }
     }
 }

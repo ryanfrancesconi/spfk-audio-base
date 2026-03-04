@@ -61,20 +61,18 @@ public struct WaveformData: Hashable, Codable, Sendable {
 
         let startIndex = Int(startTime * samplesPerSecond)
         let endIndex = Int(endTime * samplesPerSecond)
-        let frameCount = endIndex - startIndex
 
-        return try edit(startIndex: startIndex, endIndex: endIndex, frameCount: frameCount)
+        return try edit(startIndex: startIndex, endIndex: endIndex)
     }
 
-    func edit(startIndex: Int, endIndex: Int, frameCount: Int) throws -> FloatChannelData {
-        var subdata: FloatChannelData = allocateFloatChannelData(length: frameCount, channelCount: channelCount)
+    func edit(startIndex: Int, endIndex: Int) throws -> FloatChannelData {
+        var subdata = FloatChannelData()
+        subdata.reserveCapacity(channelCount)
 
         for n in 0 ..< floatChannelData.count {
-            subdata[n] = [Float](floatChannelData[n][startIndex ..< endIndex])
+            subdata.append(Array(floatChannelData[n][startIndex ..< endIndex]))
             try Task.checkCancellation()
         }
-
-        // Log.debug("updated data \(startIndex)..<\(endIndex)")
 
         return subdata
     }
