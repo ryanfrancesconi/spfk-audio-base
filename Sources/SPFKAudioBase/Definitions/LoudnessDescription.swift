@@ -2,7 +2,19 @@ import Foundation
 import SPFKBase
 import SwiftExtensions
 
+/// The five EBU R128 loudness metrics for an audio file.
+///
+/// All properties are optional — a `nil` value means the metric was not measured
+/// or fell outside the representable range (±99.99). Use ``isValid`` to check
+/// whether at least one meaningful metric is present, and ``validated()`` to
+/// clear any out-of-range values.
+///
+/// Conforms to `Codable` for serialization, `Comparable` (ordered by integrated
+/// loudness), and `Hashable`.
 public struct LoudnessDescription: Comparable, Hashable, Sendable {
+    /// Orders two descriptions by integrated loudness.
+    ///
+    /// Returns `false` if either value is `nil`.
     public static func < (lhs: LoudnessDescription, rhs: LoudnessDescription) -> Bool {
         guard let lhs = lhs.loudnessIntegrated,
               let rhs = rhs.loudnessIntegrated else { return false }
@@ -10,22 +22,25 @@ public struct LoudnessDescription: Comparable, Hashable, Sendable {
         return lhs < rhs
     }
 
-    /// Integrated Loudness Value of the file in LUFS dB — the overall program loudness per BS.1770-4
+    /// Integrated loudness (LUFS) — the gated, overall program loudness per ITU-R BS.1770-4.
     public var loudnessIntegrated: Float64?
 
-    /// Loudness Range of the file in LU — the distribution spread per EBU Tech 3342.
+    /// Loudness range (LU) — the statistical distribution of loudness per EBU Tech 3342.
     public var loudnessRange: Float64?
 
-    /// Maximum True Peak Value of the file (dBTP).
+    /// Maximum true peak level (dBTP) — the highest inter-sample peak across all channels.
     public var maxTruePeakLevel: Float32?
 
-    /// highest value of the Momentary Loudness Level of the file in LUFS dB — the running max of 400 ms windows.
+    /// Maximum momentary loudness (LUFS) — the highest value from sliding 400 ms windows.
     public var maxMomentaryLoudness: Float64?
 
-    /// highest value of the Short-term Loudness Level of the file in LUFS dB — the running max of 3 s windows.
+    /// Maximum short-term loudness (LUFS) — the highest value from sliding 3 s windows.
     public var maxShortTermLoudness: Float64?
 
-    /// A summary string of all values
+    /// A formatted summary of all metrics, e.g. `"I -24.1 LUFS, TP -0.1 dB, LRA 1.4 LU, M -19.5 LU, S -23.0 LU"`.
+    ///
+    /// Metrics that are `nil` display as `"N/A"`. Momentary and short-term values are
+    /// omitted entirely when `nil`.
     public var stringValue: String {
         var out = ""
 
@@ -49,6 +64,10 @@ public struct LoudnessDescription: Comparable, Hashable, Sendable {
         return out
     }
 
+    /// Creates a loudness description with the given metric values.
+    ///
+    /// All parameters default to `nil`, allowing partial construction when only
+    /// some metrics are available.
     public init(
         loudnessIntegrated: Float64? = nil,
         loudnessRange: Float64? = nil,
@@ -63,13 +82,18 @@ public struct LoudnessDescription: Comparable, Hashable, Sendable {
         self.maxShortTermLoudness = maxShortTermLoudness
     }
 
-    /// 0x7fff might be used to designate an unused value
-    /// valid audio range in spec is: -99.99 ... 99.99
-    /// invalid = 0x7FFF / 100 // 327.67 (short.max)
+    /// Returns `true` if the value falls within the representable EBU R128 range of ±99.99.
+    ///
+    /// Values outside this range (e.g. `0x7FFF / 100 = 327.67`, a common sentinel)
+    /// are considered invalid.
     static func isValid(value: some BinaryFloatingPoint & Comparable) -> Bool {
         (-99.99 ... 99.99).contains(value)
     }
 
+    /// Returns a copy with any out-of-range metrics set to `nil`.
+    ///
+    /// Each property is checked against the ±99.99 range. Values that fall outside
+    /// (including common sentinel values like `0x7FFF / 100`) are cleared.
     public func validated() -> LoudnessDescription {
         var desc = self
 
@@ -96,7 +120,11 @@ public struct LoudnessDescription: Comparable, Hashable, Sendable {
         return desc
     }
 
-    // don't check LRA here, a value of zero is valid
+    /// Whether this description contains at least one usable metric.
+    ///
+    /// Returns `true` if any of ``loudnessIntegrated``, ``maxTruePeakLevel``,
+    /// ``maxMomentaryLoudness``, or ``maxShortTermLoudness`` is non-nil.
+    /// ``loudnessRange`` is excluded because a value of zero is valid.
     public var isValid: Bool {
         loudnessIntegrated != nil ||
             maxTruePeakLevel != nil ||
@@ -136,7 +164,12 @@ extension LoudnessDescription: Codable {
 }
 
 extension [LoudnessDescription] {
-    /// Create a single average object representing all values
+    /// The arithmetic mean of each metric across all valid descriptions.
+    ///
+    /// Invalid descriptions (per ``LoudnessDescription/isValid``) are filtered out
+    /// before averaging. Each metric is averaged independently — if a metric is `nil`
+    /// in some descriptions, only the non-nil values contribute to its mean.
+    /// Returns an empty (invalid) description if the array contains no valid entries.
     public var average: LoudnessDescription {
         var out = LoudnessDescription()
 
