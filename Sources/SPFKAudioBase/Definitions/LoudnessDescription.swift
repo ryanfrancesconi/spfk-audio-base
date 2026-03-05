@@ -10,19 +10,19 @@ public struct LoudnessDescription: Comparable, Hashable, Sendable {
         return lhs < rhs
     }
 
-    /// Integrated Loudness Value of the file in LUFS dB. (Note: Added in version 2.)
+    /// Integrated Loudness Value of the file in LUFS dB — the overall program loudness per BS.1770-4
     public var loudnessIntegrated: Float64?
 
-    /// Loudness Range of the file in LU. (Note: Added in version 2.)
+    /// Loudness Range of the file in LU — the distribution spread per EBU Tech 3342.
     public var loudnessRange: Float64?
 
-    /// Maximum True Peak Value of the file (dBTP). (Note: Added in version 2.)
+    /// Maximum True Peak Value of the file (dBTP).
     public var maxTruePeakLevel: Float32?
 
-    /// highest value of the Momentary Loudness Level of the file in LUFS dB. (Note: Added in version 2.)
+    /// highest value of the Momentary Loudness Level of the file in LUFS dB — the running max of 400 ms windows.
     public var maxMomentaryLoudness: Float64?
 
-    /// highest value of the Short-term Loudness Level of the file in LUFS dB. (Note: Added in version 2.)
+    /// highest value of the Short-term Loudness Level of the file in LUFS dB — the running max of 3 s windows.
     public var maxShortTermLoudness: Float64?
 
     /// A summary string of all values
