@@ -11,7 +11,7 @@ public actor AudioDefaults {
     private init() {}
 
     public private(set) var minimumSampleRateSupported: Double = 44100
-    public private(set) var enforceMinimumSamplateRate = false
+    public private(set) var enforceMinimumSampleRate = false
 
     public private(set) lazy var systemFormat: AVAudioFormat = AudioDefaults.defaultFormat
 
@@ -35,7 +35,7 @@ public actor AudioDefaults {
     }
 
     public func isSupported(sampleRate: Double) -> Bool {
-        guard enforceMinimumSamplateRate else {
+        guard enforceMinimumSampleRate else {
             return sampleRate > 0
         }
 
@@ -48,7 +48,7 @@ public actor AudioDefaults {
         self.minimumSampleRateSupported = minimumSampleRateSupported
     }
 
-    public func update(enforceMinimumSamplateRate: Bool) {
-        self.enforceMinimumSamplateRate = enforceMinimumSamplateRate
+    public func update(enforceMinimumSampleRate: Bool) {
+        self.enforceMinimumSampleRate = enforceMinimumSampleRate
     }
 }

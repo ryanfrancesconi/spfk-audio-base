@@ -46,7 +46,7 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable {
     case w64
 
     /// File types that are commonly used for metadata storage
-    public var metadataTypes: [AudioFileType] { [
+    public static let metadataTypes: [AudioFileType] = [
         .aac,
         .aiff,
         .m4a,
@@ -57,10 +57,10 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable {
         .flac,
         .ogg,
         .opus,
-    ] }
+    ]
 
     public var supportsMetadata: Bool {
-        metadataTypes.contains(self)
+        Self.metadataTypes.contains(self)
     }
 
     public var stringValue: String {

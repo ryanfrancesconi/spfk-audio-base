@@ -10,7 +10,7 @@ extension AVAudioPCMBuffer {
         var sampleData = Data()
 
         if let floatChannelData {
-            for frame in 0 ..< frameCapacity {
+            for frame in 0 ..< frameLength {
                 for channel in 0 ..< format.channelCount {
                     let sample = floatChannelData[Int(channel)][Int(frame)]
 
@@ -30,6 +30,22 @@ extension AVAudioPCMBuffer {
             for channel in 0 ..< format.channelCount {
                 for frame in 0 ..< frameLength {
                     if floatChannelData[Int(channel)][Int(frame)] != 0.0 {
+                        return false
+                    }
+                }
+            }
+        } else if let int16ChannelData {
+            for channel in 0 ..< format.channelCount {
+                for frame in 0 ..< frameLength {
+                    if int16ChannelData[Int(channel)][Int(frame)] != 0 {
+                        return false
+                    }
+                }
+            }
+        } else if let int32ChannelData {
+            for channel in 0 ..< format.channelCount {
+                for frame in 0 ..< frameLength {
+                    if int32ChannelData[Int(channel)][Int(frame)] != 0 {
                         return false
                     }
                 }
@@ -68,25 +84,19 @@ extension AVAudioPCMBuffer {
             throw NSError(description: "Insufficient space in buffer")
         }
 
-        guard let dst1 = floatChannelData?[0],
-            let src1 = buffer.floatChannelData?[0],
-            let dst2 = floatChannelData?[1],
-            let src2 = buffer.floatChannelData?[1]
+        guard let dst = floatChannelData,
+            let src = buffer.floatChannelData
         else {
             throw NSError(description: "Buffer data is invalid")
         }
 
-        memcpy(
-            dst1.advanced(by: stride * Int(frameLength)),
-            src1.advanced(by: stride * Int(startingFrame)),
-            Int(frameCount) * stride * MemoryLayout<Float>.size,
-        )
-
-        memcpy(
-            dst2.advanced(by: stride * Int(frameLength)),
-            src2.advanced(by: stride * Int(startingFrame)),
-            Int(frameCount) * stride * MemoryLayout<Float>.size,
-        )
+        for channel in 0 ..< Int(format.channelCount) {
+            memcpy(
+                dst[channel].advanced(by: stride * Int(frameLength)),
+                src[channel].advanced(by: stride * Int(startingFrame)),
+                Int(frameCount) * stride * MemoryLayout<Float>.size,
+            )
+        }
 
         frameLength += frameCount
     }
