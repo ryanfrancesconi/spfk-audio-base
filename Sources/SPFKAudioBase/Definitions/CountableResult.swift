@@ -1,14 +1,29 @@
 import Foundation
 
-/// Track results and determine the most frequent entry.
+/// Tracks appended values and determines the most frequent entry via consensus voting.
+///
+/// Used for iterative analysis where results arrive over time and a "best guess"
+/// can be requested at any point. Supports both exact `Hashable` matching and
+/// custom approximate matching via a predicate.
+///
+/// When `matchesRequired` is set, ``append(_:)`` returns `true` as soon as any
+/// value reaches that count, enabling early exit from streaming analysis.
 public struct CountableResult<T: Hashable & Sendable>: ExpressibleByArrayLiteral {
+    /// Controls which candidate wins when multiple values are tied for most frequent.
     public enum TieBreakerWeight {
+        /// The value that appeared first in the results wins.
         case first
+        /// The value that appeared last in the results wins.
         case last
     }
 
+    /// All values appended so far, in insertion order.
     public private(set) var results: [T] = []
+
+    /// The value that first reached `matchesRequired`, if any.
     public private(set) var suggestedValue: T?
+
+    /// The number of matching entries needed for ``append(_:)`` to return `true`.
     public var matchesRequired: Int?
 
     /// Optional custom match predicate. When provided, this is used instead of `==`
@@ -49,7 +64,11 @@ public struct CountableResult<T: Hashable & Sendable>: ExpressibleByArrayLiteral
         self.isMatch = isMatch
     }
 
-    /// Append a value and check if it meets the required match threshold
+    /// Appends a value and checks whether the match threshold has been reached.
+    ///
+    /// - Returns: `true` if this value caused a group to reach `matchesRequired`,
+    ///   at which point ``suggestedValue`` is set. Returns `false` otherwise
+    ///   or if `matchesRequired` is `nil`.
     public mutating func append(_ value: T) -> Bool {
         results.append(value)
 
@@ -77,6 +96,13 @@ public struct CountableResult<T: Hashable & Sendable>: ExpressibleByArrayLiteral
         return false
     }
 
+    /// Returns the most frequent value, or ``suggestedValue`` if one was set early.
+    ///
+    /// When multiple values are tied for the highest count, `tieBreakerWeight`
+    /// determines whether the earliest or latest occurrence wins.
+    ///
+    /// - Parameter tieBreakerWeight: How to break ties. Defaults to `.first`.
+    /// - Returns: The winning value, or `nil` if no results have been appended.
     public func choose(tieBreakerWeight: TieBreakerWeight = .first) -> T? {
         if let suggestedValue { return suggestedValue }
 
