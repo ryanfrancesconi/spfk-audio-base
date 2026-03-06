@@ -14,10 +14,10 @@ public struct Bpm: Equatable, Sendable, Comparable, Hashable, Codable {
     public static let tempoRange: ClosedRange<Bpm> = Bpm(1)! ... Bpm(1024)!
 
     /// 60 BPM — one beat per second.
-    public static let _60bpm = Bpm(60)!
+    public static let bpm60 = Bpm(60)!
 
     /// 120 BPM — a common default tempo.
-    public static let _120bpm = Bpm(120)!
+    public static let bpm120 = Bpm(120)!
 
     /// Orders two `Bpm` values by their raw tempo.
     public static func < (lhs: Bpm, rhs: Bpm) -> Bool {
