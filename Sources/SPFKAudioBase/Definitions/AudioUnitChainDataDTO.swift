@@ -8,26 +8,26 @@ public struct AudioUnitInsertDTO: Sendable, Hashable, Equatable, Codable {
     public var uid: String
     public var index: Int
     public var isBypassed: Bool
-    public var isWindowVisible: Bool
     public var name: String?
     public var fullStatePlistData: Data?
+    public var isWindowVisible: Bool
     public var windowFrame: CG.Rect?
 
     public init(
         uid: String,
         index: Int,
         isBypassed: Bool,
-        isWindowVisible: Bool = false,
         name: String? = nil,
         fullStatePlistData: Data? = nil,
+        isWindowVisible: Bool = false,
         windowFrame: CG.Rect? = nil
     ) {
         self.uid = uid
         self.index = index
         self.isBypassed = isBypassed
-        self.isWindowVisible = isWindowVisible
         self.name = name
         self.fullStatePlistData = fullStatePlistData
+        self.isWindowVisible = isWindowVisible
         self.windowFrame = windowFrame
     }
 }
