@@ -30,6 +30,32 @@ public struct AudioUnitInsertDTO: Sendable, Hashable, Equatable, Codable {
         self.isWindowVisible = isWindowVisible
         self.windowFrame = windowFrame
     }
+
+    enum CodingKeys: String, CodingKey {
+        case uid, index, isBypassed, name, fullStatePlistData, isWindowVisible, windowFrame
+    }
+
+    /// SwiftData may create empty containers for nil optional composite types.
+    /// Use decodeIfPresent for required fields and throw when all are missing
+    /// so callers using try? get nil instead of a CoreData-level crash.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        guard let uid = try container.decodeIfPresent(String.self, forKey: .uid) else {
+            throw DecodingError.valueNotFound(
+                AudioUnitInsertDTO.self,
+                .init(codingPath: container.codingPath, debugDescription: "Empty container for optional AudioUnitInsertDTO")
+            )
+        }
+
+        self.uid = uid
+        index = try container.decodeIfPresent(Int.self, forKey: .index) ?? 0
+        isBypassed = try container.decodeIfPresent(Bool.self, forKey: .isBypassed) ?? false
+        name = try container.decodeIfPresent(String.self, forKey: .name)
+        fullStatePlistData = try container.decodeIfPresent(Data.self, forKey: .fullStatePlistData)
+        isWindowVisible = try container.decodeIfPresent(Bool.self, forKey: .isWindowVisible) ?? false
+        windowFrame = try? container.decodeIfPresent(CG.Rect.self, forKey: .windowFrame)
+    }
 }
 
 extension AudioUnitInsertDTO {
@@ -55,5 +81,28 @@ public struct AudioUnitChainDataDTO: Sendable, Hashable, Equatable, Codable {
     public init(insertCount: Int, inserts: [AudioUnitInsertDTO]) {
         self.insertCount = insertCount
         self.inserts = inserts
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case insertCount, inserts
+    }
+
+    /// SwiftData may create empty containers for nil optional composite types.
+    /// Throw when all keys are missing so callers using try? get nil.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        let decodedCount = try container.decodeIfPresent(Int.self, forKey: .insertCount)
+        let decodedInserts = try container.decodeIfPresent([AudioUnitInsertDTO].self, forKey: .inserts)
+
+        guard decodedCount != nil || decodedInserts != nil else {
+            throw DecodingError.valueNotFound(
+                AudioUnitChainDataDTO.self,
+                .init(codingPath: container.codingPath, debugDescription: "Empty container for optional AudioUnitChainDataDTO")
+            )
+        }
+
+        insertCount = decodedCount ?? 0
+        inserts = decodedInserts ?? []
     }
 }
