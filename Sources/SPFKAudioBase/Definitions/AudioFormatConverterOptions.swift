@@ -23,9 +23,9 @@ public struct AudioFormatConverterOptions: Codable, Sendable {
 
     // MARK: - Static
 
-    /// Formats supported for output conversion: WAV, AIFF, CAF, M4A, MP3.
+    /// Formats supported for output conversion.
     public static let supportedOutputFormats: [AudioFileType] = [
-        .wav, .aiff, .caf, .m4a, .mp3,
+        .wav, .aiff, .caf, .flac, .m4a, .mp3, .ogg,
     ]
 
     /// Discrete bit depths supported for PCM output.

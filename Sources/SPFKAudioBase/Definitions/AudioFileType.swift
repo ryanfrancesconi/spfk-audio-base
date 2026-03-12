@@ -150,6 +150,17 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable {
         audioFormatID == kAudioFormatLinearPCM
     }
 
+    /// Whether this format uses bit depth for encoding (PCM and lossless formats like FLAC).
+    /// Formats that return `false` use bit rate instead (MP3, M4A, OGG Vorbis).
+    public var usesBitDepth: Bool {
+        switch self {
+        case .wav, .aiff, .caf, .flac:
+            true
+        default:
+            false
+        }
+    }
+
     public var mimeType: String? {
         switch self {
         case .aac:  "audio/aac"
