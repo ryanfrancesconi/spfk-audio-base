@@ -244,3 +244,5 @@ public enum BitDepthRule: String, Codable, Sendable {
     /// Allow any bit depth conversion, including upsampling.
     case any
 }
+
+extension AudioFormatConverterOptions: Serializable {}
