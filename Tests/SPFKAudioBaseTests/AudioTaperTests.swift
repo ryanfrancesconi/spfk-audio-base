@@ -2,6 +2,7 @@
 
 import AudioToolbox
 import Foundation
+import SPFKBase
 import SPFKTesting
 import Testing
 
