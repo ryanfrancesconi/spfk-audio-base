@@ -4,7 +4,7 @@ import AudioToolbox
 import Foundation
 import SPFKBase
 
-public struct AudioUnitInsertDTO: Sendable, Hashable, Equatable, Codable {
+public struct AudioUnitInsert: Sendable, Hashable, Equatable, Codable {
     public var uid: String
     public var index: Int
     public var isBypassed: Bool
@@ -43,8 +43,8 @@ public struct AudioUnitInsertDTO: Sendable, Hashable, Equatable, Codable {
 
         guard let uid = try container.decodeIfPresent(String.self, forKey: .uid) else {
             throw DecodingError.valueNotFound(
-                AudioUnitInsertDTO.self,
-                .init(codingPath: container.codingPath, debugDescription: "Empty container for optional AudioUnitInsertDTO")
+                AudioUnitInsert.self,
+                .init(codingPath: container.codingPath, debugDescription: "Empty container for optional AudioUnitInsert")
             )
         }
 
@@ -58,7 +58,7 @@ public struct AudioUnitInsertDTO: Sendable, Hashable, Equatable, Codable {
     }
 }
 
-extension AudioUnitInsertDTO {
+extension AudioUnitInsert {
     public var componentDescription: AudioComponentDescription? {
         AudioComponentDescription(uid: uid)
     }
@@ -74,11 +74,11 @@ extension AudioUnitInsertDTO {
     }
 }
 
-public struct AudioUnitChainDataDTO: Sendable, Hashable, Equatable, Codable {
+public struct AudioUnitChainState: Sendable, Hashable, Equatable, Codable {
     public var insertCount: Int
-    public var inserts: [AudioUnitInsertDTO]
+    public var inserts: [AudioUnitInsert]
 
-    public init(insertCount: Int, inserts: [AudioUnitInsertDTO]) {
+    public init(insertCount: Int, inserts: [AudioUnitInsert]) {
         self.insertCount = insertCount
         self.inserts = inserts
     }
@@ -93,12 +93,12 @@ public struct AudioUnitChainDataDTO: Sendable, Hashable, Equatable, Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         let decodedCount = try container.decodeIfPresent(Int.self, forKey: .insertCount)
-        let decodedInserts = try container.decodeIfPresent([AudioUnitInsertDTO].self, forKey: .inserts)
+        let decodedInserts = try container.decodeIfPresent([AudioUnitInsert].self, forKey: .inserts)
 
         guard decodedCount != nil || decodedInserts != nil else {
             throw DecodingError.valueNotFound(
-                AudioUnitChainDataDTO.self,
-                .init(codingPath: container.codingPath, debugDescription: "Empty container for optional AudioUnitChainDataDTO")
+                AudioUnitChainState.self,
+                .init(codingPath: container.codingPath, debugDescription: "Empty container for optional AudioUnitChainState")
             )
         }
 
