@@ -25,7 +25,9 @@ public struct AudioFormatConverterOptions: Codable, Sendable {
 
     /// Formats supported for output conversion.
     public static let supportedOutputFormats: [AudioFileType] = [
-        .wav, .aiff, .caf, .flac, .m4a, .mp3, .ogg,
+        .wav, .aiff, .caf,
+        .m4a, .mp3,
+        .flac, .ogg,
     ]
 
     /// Discrete bit depths supported for PCM output.
@@ -80,7 +82,9 @@ public struct AudioFormatConverterOptions: Codable, Sendable {
     public var bitRate: UInt32 = 256_000 {
         didSet {
             if bitRate < Self.bitRateRange.lowerBound {
-                Log.error("bitRate is too low \(bitRate) and will be clamped to \(Self.bitRateRange). Did you *= 1000? Will be clamped to \(Self.bitRateRange)")
+                Log.error(
+                    "bitRate is too low \(bitRate) and will be clamped to \(Self.bitRateRange). Did you *= 1000? Will be clamped to \(Self.bitRateRange)"
+                )
             }
 
             bitRate = bitRate.clamped(to: Self.bitRateRange)
@@ -188,14 +192,9 @@ public struct AudioFormatConverterOptions: Codable, Sendable {
 
 extension AudioFormatConverterOptions: Equatable, Hashable {
     public static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.format == rhs.format &&
-            lhs.sampleRate == rhs.sampleRate &&
-            lhs.bitsPerChannel == rhs.bitsPerChannel &&
-            lhs.bitRate == rhs.bitRate &&
-            lhs.bitDepthRule == rhs.bitDepthRule &&
-            lhs.channels == rhs.channels &&
-            lhs.isInterleaved == rhs.isInterleaved &&
-            lhs.eraseFile == rhs.eraseFile
+        lhs.format == rhs.format && lhs.sampleRate == rhs.sampleRate && lhs.bitsPerChannel == rhs.bitsPerChannel
+            && lhs.bitRate == rhs.bitRate && lhs.bitDepthRule == rhs.bitDepthRule && lhs.channels == rhs.channels
+            && lhs.isInterleaved == rhs.isInterleaved && lhs.eraseFile == rhs.eraseFile
     }
 
     public func hash(into hasher: inout Hasher) {

@@ -70,10 +70,10 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable {
     /// See getFileTypeName() for lookup version
     public var fileTypeName: String? {
         switch self {
-        case .aac:  "AAC"
-        case .aiff: "AIFF"
-        case .caf:  "CAF"
-        case .flac: "FLAC"
+        case .aac:  "Advanced Audio Coding"
+        case .aiff: "Audio Interchange File Format"
+        case .caf:  "Core Audio Format"
+        case .flac: "Free Lossless Audio Codec"
         case .m4a:  "Apple MPEG-4 Audio"
         case .m4b:  "Apple MPEG-4 AudioBooks"
         case .mp3:  "MPEG Layer 3"
@@ -87,6 +87,14 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable {
         default:
             nil
         }
+    }
+
+    /// Returns a descriptive UI facing string suitable for display
+    public var fileTypeNameAndExtension: String {
+        let ext = pathExtension.uppercased()
+
+        guard let fileTypeName else { return ext }
+        return "\(ext) (\(fileTypeName))"
     }
 
     public var pathExtension: String { rawValue }
