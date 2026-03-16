@@ -83,7 +83,7 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable {
         case .ogg:  "Ogg Vorbis"
         case .opus: "Ogg Opus"
         case .wav:  "Waveform Audio"
-        case .w64:  "Wave (BW64 for length over 4 GB)"
+        case .w64:  "Wave (BW64 over 4 GB)"
         default:
             nil
         }
