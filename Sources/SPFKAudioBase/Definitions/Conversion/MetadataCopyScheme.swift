@@ -37,6 +37,25 @@ public enum MetadataCopyScheme: Codable, Sendable, CaseIterable {
             "Ignore"
         }
     }
-}
 
-// TODO: CLAUDE add explicit Codable defs for SwiftData
+    /// Whether this scheme includes text-based metadata (tags, BEXT, iXML, XMP).
+    public var includesText: Bool {
+        switch self {
+        case .copyAll, .copyText, .copyTextAndMarkers: true
+        case .copyMarkers, .ignore: false
+        }
+    }
+
+    /// Whether this scheme includes markers (RIFF cue points, ID3 chapters).
+    public var includesMarkers: Bool {
+        switch self {
+        case .copyAll, .copyMarkers, .copyTextAndMarkers: true
+        case .copyText, .ignore: false
+        }
+    }
+
+    /// Whether this scheme includes embedded artwork.
+    public var includesImage: Bool {
+        self == .copyAll
+    }
+}
