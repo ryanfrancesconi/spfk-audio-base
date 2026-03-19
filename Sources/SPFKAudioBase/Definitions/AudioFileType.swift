@@ -4,27 +4,12 @@ import AVFoundation
 import CoreAudio
 import Foundation
 
+import RawCodable
+
 // swiftformat:disable consecutiveSpaces
 
-extension AudioFileType: Codable {
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        let value = try container.decode(String.self)
-
-        guard let audioFileType = AudioFileType(rawValue: value) else {
-            throw NSError(file: #file, function: #function, description: "Unknown value: \(value)")
-        }
-
-        self = audioFileType
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(rawValue)
-    }
-}
-
 /// Common audio formats used by the SPFK system
+@RawCodable
 public enum AudioFileType: String, Hashable, CaseIterable, Sendable {
     case aac
     case aifc

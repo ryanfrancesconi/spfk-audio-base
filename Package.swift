@@ -15,13 +15,15 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ryanfrancesconi/spfk-base", from: "0.0.3"),
+        .package(url: "https://github.com/ryanfrancesconi/spfk-raw-codable", from: "0.0.1"),
         .package(url: "https://github.com/ryanfrancesconi/spfk-testing", from: "0.0.9"),
     ],
     targets: [
         .target(
             name: "SPFKAudioBase",
             dependencies: [
-                .product(name: "SPFKBase", package: "spfk-base")
+                .product(name: "SPFKBase", package: "spfk-base"),
+                .product(name: "RawCodable", package: "spfk-raw-codable"),
             ]
         ),
         .testTarget(
