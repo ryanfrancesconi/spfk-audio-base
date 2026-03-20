@@ -109,7 +109,7 @@ struct AudioFileTypeExtensionTests {
     @Test("fileTypeName for known types")
     func fileTypeName() {
         #expect(AudioFileType.wav.fileTypeName == "Waveform Audio")
-        #expect(AudioFileType.aiff.fileTypeName == "AIFF")
+        #expect(AudioFileType.aiff.fileTypeName == "Audio Interchange File Format")
         #expect(AudioFileType.mp3.fileTypeName == "MPEG Layer 3")
         #expect(AudioFileType.au.fileTypeName == nil)
     }
