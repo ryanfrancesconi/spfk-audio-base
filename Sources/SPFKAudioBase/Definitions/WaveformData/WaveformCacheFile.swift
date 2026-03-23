@@ -1,0 +1,273 @@
+// Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-audio-base
+
+import Foundation
+import SPFKBase
+
+/// Binary file format wrapper for waveform cache entries (`.wfcache`).
+///
+/// Layout: `[header: 56 bytes][url: variable UTF-8][float data]`
+///
+/// The fixed header contains all metadata needed for freshness checks and
+/// `WaveformData` reconstruction. Freshness fields (`modificationDate`,
+/// `fileSize`) are at fixed offsets 8–23 for fast partial reads.
+public struct WaveformCacheFile {
+    /// File extension for the unified cache format.
+    public static let fileExtension = "wfcache"
+
+    /// Magic bytes identifying this file format: "WFDC".
+    public static let magic: [UInt8] = [0x57, 0x46, 0x44, 0x43]
+
+    /// Current format version.
+    public static let currentVersion: UInt16 = 1
+
+    /// Fixed header size in bytes (before the variable-length URL).
+    public static let fixedHeaderSize = 56
+
+    /// Byte offset of the freshness fields within the header.
+    private static let freshnessOffset = 8
+
+    /// Number of bytes to read for freshness validation (magic + version + flags + date + size).
+    private static let freshnessReadSize = 24
+
+    private init() {}
+}
+
+// MARK: - Write
+
+extension WaveformCacheFile {
+    /// Writes a complete waveform cache entry to a single `.wfcache` file.
+    public static func write(_ item: WaveformDataItem, to url: URL) throws {
+        let floatChannelData = item.waveformData.floatChannelData
+        let channelCount = UInt32(floatChannelData.count)
+        let pointsPerChannel = UInt32(floatChannelData.first?.count ?? 0)
+        let urlBytes = Array(item.url.absoluteString.utf8)
+        let urlByteCount = UInt32(urlBytes.count)
+        let totalFloats = Int(channelCount) * Int(pointsPerChannel)
+        let totalSize = fixedHeaderSize + urlBytes.count + totalFloats * MemoryLayout<Float>.size
+
+        var data = Data(capacity: totalSize)
+
+        // Magic (4 bytes)
+        data.append(contentsOf: magic)
+
+        // Version (UInt16) + Flags (UInt16)
+        appendValue(&data, currentVersion)
+        appendValue(&data, UInt16(0))
+
+        // Freshness fields
+        appendValue(&data, encodeDate(item.modificationDate))
+        appendValue(&data, encodeFileSize(item.fileSize))
+
+        // Audio metadata
+        appendValue(&data, Float64(item.waveformData.audioDuration))
+        appendValue(&data, Float64(item.waveformData.sampleRate))
+        appendValue(&data, UInt32(item.waveformData.samplesPerPoint))
+
+        // Channel layout
+        appendValue(&data, channelCount)
+        appendValue(&data, pointsPerChannel)
+        appendValue(&data, urlByteCount)
+
+        assert(data.count == fixedHeaderSize)
+
+        // Variable-length URL
+        data.append(contentsOf: urlBytes)
+
+        // Float channel data
+        for channel in floatChannelData {
+            channel.withUnsafeBufferPointer { buffer in
+                data.append(buffer)
+            }
+        }
+
+        try data.write(to: url, options: .atomic)
+    }
+}
+
+// MARK: - Read
+
+extension WaveformCacheFile {
+    /// Reads a complete waveform cache entry from a `.wfcache` file.
+    public static func read(from url: URL) throws -> WaveformDataItem {
+        let data = try Data(contentsOf: url)
+        try validateMagic(data)
+
+        guard data.count >= fixedHeaderSize else {
+            throw NSError(description: "Waveform cache file too small: \(data.count) bytes")
+        }
+
+        return try data.withUnsafeBytes { raw in
+            let version: UInt16 = raw.load(fromByteOffset: 4, as: UInt16.self)
+            guard version <= currentVersion else {
+                throw NSError(description: "Unsupported waveform cache version: \(version)")
+            }
+
+            let modDate = decodeDate(raw.load(fromByteOffset: 8, as: Float64.self))
+            let fileSize = decodeFileSize(raw.load(fromByteOffset: 16, as: Int64.self))
+            let audioDuration = raw.load(fromByteOffset: 24, as: Float64.self)
+            let sampleRate = raw.load(fromByteOffset: 32, as: Float64.self)
+            let samplesPerPoint = raw.load(fromByteOffset: 40, as: UInt32.self)
+            let channelCount = raw.load(fromByteOffset: 44, as: UInt32.self)
+            let pointsPerChannel = raw.load(fromByteOffset: 48, as: UInt32.self)
+            let urlByteCount = raw.load(fromByteOffset: 52, as: UInt32.self)
+
+            let urlStart = fixedHeaderSize
+            let urlEnd = urlStart + Int(urlByteCount)
+
+            guard urlEnd <= data.count else {
+                throw NSError(description: "Waveform cache URL extends past end of file")
+            }
+
+            let urlData = data[urlStart ..< urlEnd]
+            guard let urlString = String(data: urlData, encoding: .utf8),
+                  let sourceURL = URL(string: urlString)
+            else {
+                throw NSError(description: "Invalid URL in waveform cache file")
+            }
+
+            let floatStart = urlEnd
+            let expectedFloatBytes = Int(channelCount) * Int(pointsPerChannel) * MemoryLayout<Float>.size
+            let expectedTotal = floatStart + expectedFloatBytes
+
+            guard data.count == expectedTotal else {
+                throw NSError(
+                    description: "Waveform cache size mismatch: expected \(expectedTotal), got \(data.count)"
+                )
+            }
+
+            // Parse float channel data
+            var floatChannelData = FloatChannelData()
+            floatChannelData.reserveCapacity(Int(channelCount))
+
+            let channelByteCount = Int(pointsPerChannel) * MemoryLayout<Float>.size
+            var offset = floatStart
+
+            for _ in 0 ..< channelCount {
+                let channelData = data[offset ..< offset + channelByteCount]
+                let floats = channelData.withUnsafeBytes { rawBuffer in
+                    Array(rawBuffer.bindMemory(to: Float.self))
+                }
+                floatChannelData.append(floats)
+                offset += channelByteCount
+            }
+
+            let waveformData = WaveformData(
+                floatChannelData: floatChannelData,
+                samplesPerPoint: Int(samplesPerPoint),
+                audioDuration: TimeInterval(audioDuration),
+                sampleRate: Double(sampleRate)
+            )
+
+            return WaveformDataItem(
+                url: sourceURL,
+                modificationDate: modDate,
+                fileSize: fileSize,
+                waveformData: waveformData
+            )
+        }
+    }
+}
+
+// MARK: - Freshness
+
+extension WaveformCacheFile {
+    /// Lightweight metadata for freshness checks.
+    public struct FreshnessInfo: Sendable {
+        public let modificationDate: Date?
+        public let fileSize: Int?
+
+        public func isFresh(comparedTo fileURL: URL) -> Bool {
+            modificationDate == fileURL.modificationDate && fileSize == fileURL.fileSize
+        }
+    }
+
+    /// Reads only the magic, version, and freshness fields (24 bytes) via `FileHandle`.
+    /// Does not load URL or float data.
+    public static func readFreshness(from url: URL) throws -> FreshnessInfo {
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+
+        guard let headerData = try handle.read(upToCount: freshnessReadSize),
+              headerData.count == freshnessReadSize
+        else {
+            throw NSError(description: "Waveform cache file too small for freshness read")
+        }
+
+        try validateMagic(headerData)
+
+        return headerData.withUnsafeBytes { raw in
+            let modDate = decodeDate(raw.load(fromByteOffset: 8, as: Float64.self))
+            let fileSize = decodeFileSize(raw.load(fromByteOffset: 16, as: Int64.self))
+            return FreshnessInfo(modificationDate: modDate, fileSize: fileSize)
+        }
+    }
+
+    /// Rewrites the file with updated freshness metadata while preserving all other fields.
+    public static func refreshFreshness(at cacheURL: URL, from fileURL: URL) throws {
+        var data = try Data(contentsOf: cacheURL)
+        try validateMagic(data)
+
+        guard data.count >= fixedHeaderSize else {
+            throw NSError(description: "Waveform cache file too small for freshness update")
+        }
+
+        // Overwrite modificationDate at offset 8
+        var modDate = encodeDate(fileURL.modificationDate)
+        data.replaceSubrange(8 ..< 16, with: Data(bytes: &modDate, count: 8))
+
+        // Overwrite fileSize at offset 16
+        var size = encodeFileSize(fileURL.fileSize)
+        data.replaceSubrange(16 ..< 24, with: Data(bytes: &size, count: 8))
+
+        try data.write(to: cacheURL, options: .atomic)
+    }
+}
+
+// MARK: - Validation
+
+extension WaveformCacheFile {
+    /// Returns true if the file at the given URL starts with valid WFDC magic bytes.
+    public static func isValid(at url: URL) -> Bool {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return false }
+        defer { try? handle.close() }
+        guard let headerData = try? handle.read(upToCount: 4),
+              headerData.count == 4
+        else { return false }
+        return headerData.elementsEqual(magic)
+    }
+}
+
+// MARK: - Private Helpers
+
+private extension WaveformCacheFile {
+    static func appendValue<T>(_ data: inout Data, _ value: T) {
+        withUnsafeBytes(of: value) { data.append(contentsOf: $0) }
+    }
+
+    static func encodeDate(_ date: Date?) -> Float64 {
+        date?.timeIntervalSinceReferenceDate ?? 0.0
+    }
+
+    static func decodeDate(_ value: Float64) -> Date? {
+        value == 0.0 ? nil : Date(timeIntervalSinceReferenceDate: value)
+    }
+
+    static func encodeFileSize(_ size: Int?) -> Int64 {
+        size.map { Int64($0) } ?? -1
+    }
+
+    static func decodeFileSize(_ value: Int64) -> Int? {
+        value == -1 ? nil : Int(value)
+    }
+
+    static func validateMagic(_ data: Data) throws {
+        guard data.count >= 4,
+              data[data.startIndex] == magic[0],
+              data[data.startIndex + 1] == magic[1],
+              data[data.startIndex + 2] == magic[2],
+              data[data.startIndex + 3] == magic[3]
+        else {
+            throw NSError(description: "Invalid waveform cache file: bad magic bytes")
+        }
+    }
+}
