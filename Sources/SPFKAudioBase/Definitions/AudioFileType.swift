@@ -4,13 +4,10 @@ import AVFoundation
 import CoreAudio
 import Foundation
 
-import RawCodable
-
 // swiftformat:disable consecutiveSpaces
 
 /// Common audio formats used by the SPFK system
-@RawCodable
-public enum AudioFileType: String, Hashable, CaseIterable, Sendable {
+public enum AudioFileType: String, Hashable, CaseIterable, Sendable, Codable {
     case aac
     case aifc
     case aiff

@@ -1,7 +1,6 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi
 
 import AVFoundation
-import RawCodable
 import SPFKBase
 
 /// Options controlling an audio format conversion.
@@ -161,42 +160,21 @@ public struct AudioFormatConverterOptions: Codable, Sendable {
 
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-
-        let decodedFormat = try? container.decodeIfPresent(AudioFileType.self, forKey: .format)
-        let decodedSampleRate = try? container.decodeIfPresent(Double.self, forKey: .sampleRate)
-        let decodedBitsPerChannel = try? container.decodeIfPresent(UInt32.self, forKey: .bitsPerChannel)
-        let decodedBitRate = try? container.decodeIfPresent(UInt32.self, forKey: .bitRate)
-        let decodedBitDepthRule = try? container.decodeIfPresent(BitDepthRule.self, forKey: .bitDepthRule)
-        let decodedChannels = try? container.decodeIfPresent(UInt32.self, forKey: .channels)
-        let decodedIsInterleaved = try? container.decodeIfPresent(Bool.self, forKey: .isInterleaved)
-        let decodedEraseFile = try? container.decodeIfPresent(Bool.self, forKey: .eraseFile)
-
-        guard decodedFormat != nil || decodedSampleRate != nil || decodedBitsPerChannel != nil ||
-            decodedBitRate != nil || decodedBitDepthRule != nil || decodedChannels != nil ||
-            decodedIsInterleaved != nil || decodedEraseFile != nil
-        else {
-            throw DecodingError.valueNotFound(
-                AudioFormatConverterOptions.self,
-                .init(codingPath: container.codingPath, debugDescription: "Empty container")
-            )
-        }
-
         let defaults = AudioFormatConverterOptions()
 
-        // Assign through the property to validate against supportedOutputFormats
-        format = decodedFormat ?? defaults.format
-        sampleRate = decodedSampleRate ?? defaults.sampleRate
-        bitsPerChannel = decodedBitsPerChannel ?? defaults.bitsPerChannel
-        bitRate = decodedBitRate ?? defaults.bitRate
-        bitDepthRule = decodedBitDepthRule ?? defaults.bitDepthRule
-        channels = decodedChannels ?? defaults.channels
-        isInterleaved = decodedIsInterleaved ?? defaults.isInterleaved
-        eraseFile = decodedEraseFile ?? defaults.eraseFile
+        // Assign through properties to trigger didSet validation
+        format = try container.decodeIfPresent(AudioFileType.self, forKey: .format) ?? defaults.format
+        sampleRate = try container.decodeIfPresent(Double.self, forKey: .sampleRate) ?? defaults.sampleRate
+        bitsPerChannel = try container.decodeIfPresent(UInt32.self, forKey: .bitsPerChannel) ?? defaults.bitsPerChannel
+        bitRate = try container.decodeIfPresent(UInt32.self, forKey: .bitRate) ?? defaults.bitRate
+        bitDepthRule = try container.decodeIfPresent(BitDepthRule.self, forKey: .bitDepthRule) ?? defaults.bitDepthRule
+        channels = try container.decodeIfPresent(UInt32.self, forKey: .channels) ?? defaults.channels
+        isInterleaved = try container.decodeIfPresent(Bool.self, forKey: .isInterleaved) ?? defaults.isInterleaved
+        eraseFile = try container.decodeIfPresent(Bool.self, forKey: .eraseFile) ?? defaults.eraseFile
     }
 
     public func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-
         try container.encodeIfPresent(format, forKey: .format)
         try container.encodeIfPresent(sampleRate, forKey: .sampleRate)
         try container.encodeIfPresent(bitsPerChannel, forKey: .bitsPerChannel)
@@ -249,8 +227,7 @@ extension AudioFormatConverterOptions {
 // MARK: - BitDepthRule
 
 /// Controls whether the converter may increase the bit depth beyond the source.
-@RawCodable
-public enum BitDepthRule: String, Sendable {
+public enum BitDepthRule: String, Sendable, Codable {
     /// Clamp the output bit depth to the source value (e.g. 16-bit source stays 16-bit).
     case lessThanOrEqual
 

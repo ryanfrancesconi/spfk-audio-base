@@ -11,7 +11,7 @@ import SwiftExtensions
 ///
 /// Conforms to `Codable` for serialization, `Comparable` (ordered by integrated
 /// loudness), and `Hashable`.
-public struct LoudnessDescription: Comparable, Hashable, Sendable {
+public struct LoudnessDescription: Comparable, Hashable, Sendable, Codable {
     /// Orders two descriptions by integrated loudness.
     ///
     /// Returns `false` if either value is `nil`.
@@ -130,36 +130,6 @@ public struct LoudnessDescription: Comparable, Hashable, Sendable {
             maxTruePeakLevel != nil ||
             maxMomentaryLoudness != nil ||
             maxShortTermLoudness != nil
-    }
-}
-
-extension LoudnessDescription: Codable {
-    enum CodingKeys: String, CodingKey {
-        case loudnessIntegrated
-        case loudnessRange
-        case maxMomentaryLoudness
-        case maxShortTermLoudness
-        case maxTruePeakLevel
-    }
-
-    public init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-
-        loudnessIntegrated = try? container.decodeIfPresent(Float64.self, forKey: .loudnessIntegrated)
-        loudnessRange = try? container.decodeIfPresent(Float64.self, forKey: .loudnessRange)
-        maxTruePeakLevel = try? container.decodeIfPresent(Float32.self, forKey: .maxTruePeakLevel)
-        maxMomentaryLoudness = try? container.decodeIfPresent(Float64.self, forKey: .maxMomentaryLoudness)
-        maxShortTermLoudness = try? container.decodeIfPresent(Float64.self, forKey: .maxShortTermLoudness)
-    }
-
-    public func encode(to encoder: any Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-
-        try? container.encodeIfPresent(loudnessIntegrated, forKey: .loudnessIntegrated)
-        try? container.encodeIfPresent(loudnessRange, forKey: .loudnessRange)
-        try? container.encodeIfPresent(maxTruePeakLevel, forKey: .maxTruePeakLevel)
-        try? container.encodeIfPresent(maxMomentaryLoudness, forKey: .maxMomentaryLoudness)
-        try? container.encodeIfPresent(maxShortTermLoudness, forKey: .maxShortTermLoudness)
     }
 }
 
