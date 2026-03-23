@@ -79,7 +79,7 @@ class WaveformDataParserTests: BinTestCase {
         }
 
         let result = await task.result
-        Log.debug(result)
+
         #expect(!result.isSuccess)
         #expect(result.failureValue as? CancellationError != nil)
     }

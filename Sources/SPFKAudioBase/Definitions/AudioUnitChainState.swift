@@ -30,6 +30,17 @@ public struct AudioUnitInsert: Sendable, Hashable, Equatable, Codable {
         self.isWindowVisible = isWindowVisible
         self.windowFrame = windowFrame
     }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        uid = try container.decode(String.self, forKey: .uid)
+        index = try container.decodeIfPresent(Int.self, forKey: .index) ?? 0
+        isBypassed = try container.decodeIfPresent(Bool.self, forKey: .isBypassed) ?? false
+        name = try container.decodeIfPresent(String.self, forKey: .name)
+        fullStatePlistData = try container.decodeIfPresent(Data.self, forKey: .fullStatePlistData)
+        isWindowVisible = try container.decodeIfPresent(Bool.self, forKey: .isWindowVisible) ?? false
+        windowFrame = try container.decodeIfPresent(CG.Rect.self, forKey: .windowFrame)
+    }
 }
 
 extension AudioUnitInsert {
@@ -55,5 +66,11 @@ public struct AudioUnitChainState: Sendable, Hashable, Equatable, Codable {
     public init(insertCount: Int, inserts: [AudioUnitInsert]) {
         self.insertCount = insertCount
         self.inserts = inserts
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        insertCount = try container.decodeIfPresent(Int.self, forKey: .insertCount) ?? 0
+        inserts = try container.decodeIfPresent([AudioUnitInsert].self, forKey: .inserts) ?? []
     }
 }

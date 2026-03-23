@@ -160,14 +160,14 @@ struct AudioUnitChainStateTests {
         #expect(decoded.inserts[0].uid == "uid")
     }
 
-    @Test func decodingThrowsWhenAllKeysMissing() throws {
-        // Empty JSON object simulates SwiftData empty container
+    @Test func decodingEmptyJSONDecodesToDefaults() throws {
         let json = #"{}"#
         let data = json.data(using: .utf8)!
 
-        #expect(throws: DecodingError.self) {
-            try JSONDecoder().decode(AudioUnitChainState.self, from: data)
-        }
+        let decoded = try JSONDecoder().decode(AudioUnitChainState.self, from: data)
+
+        #expect(decoded.insertCount == 0)
+        #expect(decoded.inserts.isEmpty)
     }
 
     @Test func decodingSucceedsWithOnlyInsertCount() throws {
