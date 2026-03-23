@@ -7,20 +7,7 @@ import SPFKBase
 ///
 /// Leave any property `nil` to adopt the corresponding value from the input file.
 /// `bitRate` assumes a stereo bit rate; the converter halves it for mono output.
-public struct AudioFormatConverterOptions: Codable, Sendable {
-    // MARK: - CodingKeys
-
-    enum CodingKeys: String, CodingKey {
-        case format
-        case sampleRate
-        case bitsPerChannel
-        case bitRate
-        case bitDepthRule
-        case channels
-        case isInterleaved
-        case eraseFile
-    }
-
+public struct AudioFormatConverterOptions: Sendable {
     // MARK: - Static
 
     /// Formats supported for output conversion.
@@ -155,8 +142,21 @@ public struct AudioFormatConverterOptions: Codable, Sendable {
     public init(format: AudioFileType) {
         self.format = format
     }
+}
 
-    // MARK: - Codable
+// MARK: - Codable
+
+extension AudioFormatConverterOptions: Codable, Serializable {
+    enum CodingKeys: String, CodingKey {
+        case format
+        case sampleRate
+        case bitsPerChannel
+        case bitRate
+        case bitDepthRule
+        case channels
+        case isInterleaved
+        case eraseFile
+    }
 
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -234,5 +234,3 @@ public enum BitDepthRule: String, Sendable, Codable {
     /// Allow any bit depth conversion, including upsampling.
     case any
 }
-
-extension AudioFormatConverterOptions: Serializable {}
