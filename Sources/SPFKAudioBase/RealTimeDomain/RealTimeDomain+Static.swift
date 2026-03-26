@@ -39,13 +39,17 @@ extension RealTimeDomain {
             strHours = ""
         }
 
-        let strMinutes = String(format: "%02d", minutes) + ":"
+        let strMinutes = (minutes < 10 ? "0" : "") + String(minutes) + ":"
 
-        let strSeconds = String(format: "%02d", seconds)
+        let strSeconds = (seconds < 10 ? "0" : "") + String(seconds)
 
-        let strMilliseconds: String = showMilliseconds
-            ? "." + Int(absSeconds * 1000).string(paddedTo: 3).suffix(3)
-            : ""
+        let strMilliseconds: String
+        if showMilliseconds {
+            let ms = Int(absSeconds * 1000) % 1000
+            strMilliseconds = "." + String(ms / 100) + String((ms / 10) % 10) + String(ms % 10)
+        } else {
+            strMilliseconds = ""
+        }
 
         return sign + strHours + strMinutes + strSeconds + strMilliseconds
     }
