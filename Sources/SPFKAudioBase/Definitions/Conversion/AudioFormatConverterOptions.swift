@@ -16,6 +16,14 @@ public struct AudioFormatConverterOptions: Sendable {
         .m4a, .mp3,
         .flac, .ogg,
     ]
+    
+    public static let supportedOutputFormatsString: String = {
+        var parts = AudioFormatConverterOptions.supportedOutputFormats
+            .map { $0.pathExtension.uppercased() }
+
+        if parts.count > 1 { parts[parts.count - 1] = "and \(parts[parts.count - 1])" }
+        return parts.joined(separator: ", ")
+    }()
 
     /// Discrete bit depths supported for PCM output.
     public static let supportedBitsPerChannel: [UInt32] = [16, 24, 32]
