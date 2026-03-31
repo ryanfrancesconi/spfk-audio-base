@@ -147,8 +147,9 @@ public struct AudioFormatConverterOptions: Sendable {
     }
 
     /// Creates options targeting the given format with all other values at their defaults.
-    public init(format: AudioFileType) {
+    public init(format: AudioFileType, conflictScheme: FileConflictScheme = .overwrite) {
         self.format = format
+        self.conflictScheme = conflictScheme
     }
 }
 
