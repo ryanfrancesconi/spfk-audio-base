@@ -130,7 +130,7 @@ struct AudioFormatConverterOptionsTests {
         original.bitRate = 320_000
         original.channels = 2
         original.isInterleaved = true
-        original.eraseFile = false
+        original.conflictScheme = .error
         original.bitDepthRule = .lessThanOrEqual
 
         let data = try JSONEncoder().encode(original)
@@ -194,6 +194,6 @@ struct AudioFormatConverterOptionsTests {
         #expect(options.bitDepthRule == .any)
         #expect(options.channels == nil)
         #expect(options.isInterleaved == nil)
-        #expect(options.eraseFile == true)
+        #expect(options.conflictScheme == .overwrite)
     }
 }

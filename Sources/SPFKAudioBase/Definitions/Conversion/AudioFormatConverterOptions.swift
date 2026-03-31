@@ -16,7 +16,7 @@ public struct AudioFormatConverterOptions: Sendable {
         .m4a, .mp3,
         .flac, .ogg,
     ]
-    
+
     public static let supportedOutputFormatsString: String = {
         var parts = AudioFormatConverterOptions.supportedOutputFormats
             .map { $0.pathExtension.uppercased() }
@@ -95,8 +95,8 @@ public struct AudioFormatConverterOptions: Sendable {
     /// Maps to PCM Conversion format option `AVLinearPCMIsNonInterleaved`
     public var isInterleaved: Bool?
 
-    /// Whether to overwrite an existing output file. Set to `false` to receive an error instead.
-    public var eraseFile: Bool = true
+    /// Whether to overwrite an existing output file, rename it, or throw an error if it exists
+    public var conflictScheme: FileConflictScheme = .overwrite
 
     // MARK: - Initializers
 
@@ -163,7 +163,7 @@ extension AudioFormatConverterOptions: Codable, Serializable {
         case bitDepthRule
         case channels
         case isInterleaved
-        case eraseFile
+        case conflictScheme
     }
 
     public init(from decoder: any Decoder) throws {
@@ -178,7 +178,7 @@ extension AudioFormatConverterOptions: Codable, Serializable {
         bitDepthRule = try container.decodeIfPresent(BitDepthRule.self, forKey: .bitDepthRule) ?? defaults.bitDepthRule
         channels = try container.decodeIfPresent(UInt32.self, forKey: .channels) ?? defaults.channels
         isInterleaved = try container.decodeIfPresent(Bool.self, forKey: .isInterleaved) ?? defaults.isInterleaved
-        eraseFile = try container.decodeIfPresent(Bool.self, forKey: .eraseFile) ?? defaults.eraseFile
+        conflictScheme = try container.decodeIfPresent(FileConflictScheme.self, forKey: .conflictScheme) ?? defaults.conflictScheme
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -190,7 +190,7 @@ extension AudioFormatConverterOptions: Codable, Serializable {
         try container.encode(bitDepthRule, forKey: .bitDepthRule)
         try container.encodeIfPresent(channels, forKey: .channels)
         try container.encodeIfPresent(isInterleaved, forKey: .isInterleaved)
-        try container.encode(eraseFile, forKey: .eraseFile)
+        try container.encode(conflictScheme, forKey: .conflictScheme)
     }
 }
 
@@ -200,7 +200,7 @@ extension AudioFormatConverterOptions: Equatable, Hashable {
     public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.format == rhs.format && lhs.sampleRate == rhs.sampleRate && lhs.bitsPerChannel == rhs.bitsPerChannel
             && lhs.bitRate == rhs.bitRate && lhs.bitDepthRule == rhs.bitDepthRule && lhs.channels == rhs.channels
-            && lhs.isInterleaved == rhs.isInterleaved && lhs.eraseFile == rhs.eraseFile
+            && lhs.isInterleaved == rhs.isInterleaved && lhs.conflictScheme == rhs.conflictScheme
     }
 
     public func hash(into hasher: inout Hasher) {
@@ -211,7 +211,7 @@ extension AudioFormatConverterOptions: Equatable, Hashable {
         hasher.combine(bitDepthRule)
         hasher.combine(channels)
         hasher.combine(isInterleaved)
-        hasher.combine(eraseFile)
+        hasher.combine(conflictScheme)
     }
 }
 
