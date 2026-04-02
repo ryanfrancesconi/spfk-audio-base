@@ -12,9 +12,9 @@ public enum FileConflictScheme: Int, Codable, Hashable, Sendable, CaseIterable {
 
     public var displayName: String {
         switch self {
-        case .overwrite: "Overwrite Files"
-        case .error: "Show Errors"
-        case .unique: "Rename Uniquely"
+        case .overwrite: String(localized: "Overwrite Files", bundle: .module)
+        case .error: String(localized: "Show Errors", bundle: .module)
+        case .unique: String(localized: "Rename Uniquely", bundle: .module)
         }
     }
 

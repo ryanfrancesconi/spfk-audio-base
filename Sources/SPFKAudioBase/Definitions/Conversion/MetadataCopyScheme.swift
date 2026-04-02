@@ -22,19 +22,19 @@ public enum MetadataCopyScheme: Codable, Sendable, CaseIterable {
     public var displayName: String {
         switch self {
         case .copyAll:
-            "Copy All"
+            String(localized: "Copy All", bundle: .module)
 
         case .copyText:
-            "Copy Text Based"
+            String(localized: "Copy Text Based", bundle: .module)
 
         case .copyMarkers:
-            "Copy Markers"
+            String(localized: "Copy Markers", bundle: .module)
 
         case .copyTextAndMarkers:
-            "Copy Text and Markers"
+            String(localized: "Copy Text and Markers", bundle: .module)
 
         case .ignore:
-            "Ignore"
+            String(localized: "Ignore", bundle: .module)
         }
     }
 

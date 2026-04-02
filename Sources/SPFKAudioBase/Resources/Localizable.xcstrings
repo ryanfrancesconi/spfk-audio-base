@@ -1,0 +1,30 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Copy All" : {
+
+    },
+    "Copy Markers" : {
+
+    },
+    "Copy Text and Markers" : {
+
+    },
+    "Copy Text Based" : {
+
+    },
+    "Ignore" : {
+
+    },
+    "Overwrite Files" : {
+
+    },
+    "Rename Uniquely" : {
+
+    },
+    "Show Errors" : {
+
+    }
+  },
+  "version" : "1.0"
+}

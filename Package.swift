@@ -22,7 +22,8 @@ let package = Package(
             name: "SPFKAudioBase",
             dependencies: [
                 .product(name: "SPFKBase", package: "spfk-base"),
-            ]
+            ],
+            resources: [.process("Resources")]
         ),
         .testTarget(
             name: "SPFKAudioBaseTests",
