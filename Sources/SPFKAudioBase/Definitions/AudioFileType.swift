@@ -45,6 +45,25 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable, Codable {
         Self.metadataTypes.contains(self)
     }
 
+    /// File types with reliable XMP support via the Adobe XMP SDK smart handler.
+    /// Formats not listed here either lack a smart handler or have no standard XMP embedding.
+    public static let xmpTypes: [AudioFileType] = [
+        .aiff, .aifc, .m4a, .m4b, .m4v, .mov, .mp3, .mp4, .wav, .w64,
+    ]
+
+    public var supportsXMP: Bool {
+        Self.xmpTypes.contains(self)
+    }
+
+    /// RIFF-based formats that support native chunk metadata (BEXT and iXML).
+    public static let riffTypes: [AudioFileType] = [.wav, .w64]
+
+    /// Whether this format supports BEXT metadata chunks.
+    public var supportsBEXT: Bool { Self.riffTypes.contains(self) }
+
+    /// Whether this format supports iXML metadata chunks.
+    public var supportsIXML: Bool { Self.riffTypes.contains(self) }
+
     public var stringValue: String {
         fileTypeName ?? rawValue
     }
