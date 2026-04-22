@@ -1,11 +1,8 @@
 import Foundation
 
 public enum WaveformDisplay: Sendable, Codable {
-    /// Flips the negative parts of the waveform to become positive, making the whole signal positive.
-    case rectifiedFull
-
-    /// Keeps only the positive (or negative) part of the waveform and discards the other half, creating gaps.
-    case rectifiedHalf
+    /// Flips the negative parts of the waveform to positive (abs), so the entire signal is visible above zero.
+    case rectified
 
     /// Shows the whole signal's energy, positive and negative
     case full
