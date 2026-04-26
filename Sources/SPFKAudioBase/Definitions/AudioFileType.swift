@@ -59,10 +59,12 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable, Codable {
     public static let riffTypes: [AudioFileType] = [.wav, .w64]
 
     /// Whether this format supports BEXT metadata chunks.
-    public var supportsBEXT: Bool { Self.riffTypes.contains(self) }
+    /// Includes RIFF-based formats (WAV, AIFF) and FLAC (via APPLICATION blocks).
+    public var supportsBEXT: Bool { Self.riffTypes.contains(self) || self == .flac }
 
     /// Whether this format supports iXML metadata chunks.
-    public var supportsIXML: Bool { Self.riffTypes.contains(self) }
+    /// Includes RIFF-based formats (WAV, AIFF) and FLAC (via APPLICATION blocks).
+    public var supportsIXML: Bool { Self.riffTypes.contains(self) || self == .flac }
 
     public var stringValue: String {
         fileTypeName ?? rawValue
