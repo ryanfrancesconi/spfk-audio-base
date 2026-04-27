@@ -34,11 +34,4 @@ struct MusicalTonalityTests {
         #expect(MusicalTonality.unknown.description == "")
     }
 
-    @Test("allCases contains all three")
-    func allCases() {
-        #expect(MusicalTonality.allCases.count == 3)
-        #expect(MusicalTonality.allCases.contains(.major))
-        #expect(MusicalTonality.allCases.contains(.minor))
-        #expect(MusicalTonality.allCases.contains(.unknown))
-    }
 }

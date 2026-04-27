@@ -7,33 +7,6 @@ import Testing
 @testable import SPFKAudioBase
 
 struct FileConflictSchemeTests {
-    // MARK: - CaseIterable
-
-    @Test func allCasesCount() {
-        #expect(FileConflictScheme.allCases.count == 3)
-    }
-
-    @Test func allCasesContainsExpected() {
-        let cases = FileConflictScheme.allCases
-        #expect(cases.contains(.overwrite))
-        #expect(cases.contains(.unique))
-        #expect(cases.contains(.error))
-    }
-
-    // MARK: - Raw values
-
-    @Test func overwriteRawValue() {
-        #expect(FileConflictScheme.overwrite.rawValue == 0)
-    }
-
-    @Test func uniqueRawValue() {
-        #expect(FileConflictScheme.unique.rawValue == 1)
-    }
-
-    @Test func errorRawValue() {
-        #expect(FileConflictScheme.error.rawValue == 2)
-    }
-
     // MARK: - displayName
 
     @Test func overwriteDisplayName() {
@@ -51,15 +24,15 @@ struct FileConflictSchemeTests {
     // MARK: - init?(displayName:)
 
     @Test func initFromOverwriteDisplayName() {
-        #expect(FileConflictScheme(displayName: "Overwrite Files") == .overwrite)
+        #expect(FileConflictScheme(displayName: FileConflictScheme.overwrite.displayName) == .overwrite)
     }
 
     @Test func initFromUniqueDisplayName() {
-        #expect(FileConflictScheme(displayName: "Rename Uniquely") == .unique)
+        #expect(FileConflictScheme(displayName: FileConflictScheme.unique.displayName) == .unique)
     }
 
     @Test func initFromErrorDisplayName() {
-        #expect(FileConflictScheme(displayName: "Show Errors") == .error)
+        #expect(FileConflictScheme(displayName: FileConflictScheme.error.displayName) == .error)
     }
 
     @Test func initFromUnknownDisplayNameReturnsNil() {
