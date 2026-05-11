@@ -13,6 +13,26 @@ public struct AudioTaper: Codable, Equatable, Sendable {
     }
 }
 
+// MARK: - Codable
+
+extension AudioTaper {
+    private enum CodingKeys: String, CodingKey {
+        case value, skew
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        value = try c.decodeIfPresent(AUValue.self, forKey: .value) ?? 3
+        skew = try c.decodeIfPresent(AUValue.self, forKey: .skew) ?? 0.333
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(value, forKey: .value)
+        try c.encode(skew, forKey: .skew)
+    }
+}
+
 // MARK: - Presets
 
 extension AudioTaper {

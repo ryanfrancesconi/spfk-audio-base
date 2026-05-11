@@ -172,6 +172,19 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable, Codable {
         }
     }
 
+    /// Whether `AVAudioFile` can write this format directly (PCM and AAC containers).
+    /// Formats that return `false` require an intermediate converter (e.g. MP3, FLAC, OGG, Opus).
+    /// Unknown formats not represented by this enum default to `true` — AVAudioFile will throw
+    /// if the format is actually unsupported.
+    public var isAVAudioFileWritable: Bool {
+        switch self {
+        case .aac, .aiff, .aifc, .au, .caf, .m4a, .mp4, .wav:
+            true
+        default:
+            false
+        }
+    }
+
     public var mimeType: String? {
         switch self {
         case .aac:  "audio/aac"

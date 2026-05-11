@@ -9,15 +9,16 @@ import Foundation
 /// Stored on PlaylistElement and persisted to JSON so edits survive app restarts.
 /// Cleared to nil after the edit is rendered and written to disk.
 ///
-/// Operations are applied in pipeline order: trim → reverse → fade.
+/// Operations are applied in pipeline order: extract → reverse → fade.
 public struct AudioEditDescription: Equatable, Sendable {
-    // MARK: - Trim
+    // MARK: - Extract
 
-    /// Seconds to remove from the head of the file.
-    public var trimStart: TimeInterval = 0
-
-    /// Seconds to remove from the tail of the file. Zero means no tail trim.
-    public var trimEnd: TimeInterval = 0
+    /// Ordered list of source time ranges to keep. Ranges are applied in sequence
+    /// and their output is concatenated.
+    ///
+    /// Empty means keep the entire file. A single range [0.2, 0.7] trims head and tail.
+    /// Multiple ranges allow mid-file deletions: [[0, 0.3], [0.6, 1.0]] removes 0.3–0.6 s.
+    public var keepRanges: [AudioTimeRange] = []
 
     // MARK: - Reverse
 
@@ -39,19 +40,17 @@ public struct AudioEditDescription: Equatable, Sendable {
 
     /// True when no edit operations are set — the description is a no-op.
     public var isEmpty: Bool {
-        trimStart == 0 && trimEnd == 0 && fadeIn == 0 && fadeOut == 0 && !isReversed
+        keepRanges.isEmpty && fadeIn == 0 && fadeOut == 0 && !isReversed
     }
 
     public init(
-        trimStart: TimeInterval = 0,
-        trimEnd: TimeInterval = 0,
+        keepRanges: [AudioTimeRange] = [],
         isReversed: Bool = false,
         fadeIn: TimeInterval = 0,
         fadeOut: TimeInterval = 0,
         fadeTaper: AudioTaper = .default
     ) {
-        self.trimStart = trimStart
-        self.trimEnd = trimEnd
+        self.keepRanges = keepRanges
         self.isReversed = isReversed
         self.fadeIn = fadeIn
         self.fadeOut = fadeOut
@@ -63,13 +62,12 @@ public struct AudioEditDescription: Equatable, Sendable {
 
 extension AudioEditDescription: Codable {
     private enum CodingKeys: String, CodingKey {
-        case trimStart, trimEnd, isReversed, fadeIn, fadeOut, fadeTaper
+        case keepRanges, isReversed, fadeIn, fadeOut, fadeTaper
     }
 
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        trimStart = try c.decodeIfPresent(TimeInterval.self, forKey: .trimStart) ?? 0
-        trimEnd = try c.decodeIfPresent(TimeInterval.self, forKey: .trimEnd) ?? 0
+        keepRanges = try c.decodeIfPresent([AudioTimeRange].self, forKey: .keepRanges) ?? []
         isReversed = try c.decodeIfPresent(Bool.self, forKey: .isReversed) ?? false
         fadeIn = try c.decodeIfPresent(TimeInterval.self, forKey: .fadeIn) ?? 0
         fadeOut = try c.decodeIfPresent(TimeInterval.self, forKey: .fadeOut) ?? 0
@@ -78,8 +76,7 @@ extension AudioEditDescription: Codable {
 
     public func encode(to encoder: any Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(trimStart, forKey: .trimStart)
-        try c.encode(trimEnd, forKey: .trimEnd)
+        try c.encode(keepRanges, forKey: .keepRanges)
         try c.encode(isReversed, forKey: .isReversed)
         try c.encode(fadeIn, forKey: .fadeIn)
         try c.encode(fadeOut, forKey: .fadeOut)

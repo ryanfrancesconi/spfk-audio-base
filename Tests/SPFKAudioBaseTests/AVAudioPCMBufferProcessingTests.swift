@@ -122,6 +122,17 @@ class AVAudioPCMBufferProcessingTests {
         }
     }
 
+    @Test func fadeThrowsWhenInOutExceedsBufferDuration() throws {
+        // 0.5 s buffer at 44100 Hz. inTime + outTime = 0.6 s > 0.5 s.
+        let buffer = makeBuffer(
+            channels: [Array(repeating: Float(1.0), count: Int(44100 * 0.5))],
+            sampleRate: 44100
+        )
+        #expect(throws: (any Error).self) {
+            try buffer.fade(inTime: 0.3, outTime: 0.3)
+        }
+    }
+
     @Test func fadeInGainIncreasesMonotonically() throws {
         // All-ones input: output values directly reflect the gain envelope.
         let sampleRate: Double = 44100
@@ -201,6 +212,14 @@ class AVAudioPCMBufferProcessingTests {
         #expect(samples(result) == [2, 3, 4])
     }
 
+    @Test func extractClampsEndBeyondBufferToFrameLength() throws {
+        // 5-frame buffer at 10 Hz = 0.5 s. Requesting end at 9999 s should clamp to the buffer end.
+        let buffer = makeBuffer(channels: [[1, 2, 3, 4, 5]], sampleRate: 10)
+        let result = try buffer.extract(from: 0, to: 9999)
+        #expect(result.frameLength == 5)
+        #expect(samples(result) == [1, 2, 3, 4, 5])
+    }
+
     // MARK: - applying(_:)
 
     @Test func applyingEmptyEditReturnsSelf() throws {
@@ -209,13 +228,25 @@ class AVAudioPCMBufferProcessingTests {
         #expect(result === buffer)
     }
 
-    @Test func applyingTrimReducesFrameLength() throws {
-        // 10 frames at 10 Hz. Trim 0.2 s from head and 0.3 s from tail → 5 frames remain.
+    @Test func applyingKeepRangeReducesFrameLength() throws {
+        // 10 frames at 10 Hz. Keep 0.2 s–0.7 s → frames [2,3,4,5,6] = 5 frames.
         let buffer = makeBuffer(channels: [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]], sampleRate: 10)
-        let edit = AudioEditDescription(trimStart: 0.2, trimEnd: 0.3)
+        let edit = AudioEditDescription(keepRanges: [AudioTimeRange(start: 0.2, end: 0.7)])
         let result = try buffer.applying(edit)
         #expect(result.frameLength == 5)
         #expect(samples(result) == [2, 3, 4, 5, 6])
+    }
+
+    @Test func applyingDeleteMiddleRangeJoinsSegments() throws {
+        // 10 frames at 10 Hz. Delete 0.3–0.6 s → keep [0,0.3) + [0.6,1.0) = [0,1,2,6,7,8,9].
+        let buffer = makeBuffer(channels: [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]], sampleRate: 10)
+        let edit = AudioEditDescription(keepRanges: [
+            AudioTimeRange(start: 0.0, end: 0.3),
+            AudioTimeRange(start: 0.6, end: 1.0),
+        ])
+        let result = try buffer.applying(edit)
+        #expect(result.frameLength == 7)
+        #expect(samples(result) == [0, 1, 2, 6, 7, 8, 9])
     }
 
     @Test func applyingReverseFlipsContent() throws {
@@ -225,13 +256,15 @@ class AVAudioPCMBufferProcessingTests {
         #expect(samples(result) == [5, 4, 3, 2, 1])
     }
 
-    @Test func applyingTrimThenReversePipelineOrder() throws {
-        // Trim 0.1 s from head at 10 Hz = remove frame 0 (value 1).
-        // Remaining: [2, 3, 4, 5]. Reversed: [5, 4, 3, 2].
-        let buffer = makeBuffer(channels: [[1, 2, 3, 4, 5]], sampleRate: 10)
-        let edit = AudioEditDescription(trimStart: 0.1, isReversed: true)
+    @Test func applyingKeepRangeThenReversePipelineOrder() throws {
+        // 10 frames at 10 Hz. Keep 0.1–0.5 s → frames [1,2,3,4]. Reversed: [4,3,2,1].
+        let buffer = makeBuffer(channels: [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]], sampleRate: 10)
+        let edit = AudioEditDescription(
+            keepRanges: [AudioTimeRange(start: 0.1, end: 0.5)],
+            isReversed: true
+        )
         let result = try buffer.applying(edit)
-        #expect(samples(result) == [5, 4, 3, 2])
+        #expect(samples(result) == [4, 3, 2, 1])
     }
 
     @Test func applyingFadeInOnConstantSignal() throws {
@@ -247,6 +280,29 @@ class AVAudioPCMBufferProcessingTests {
         let out = samples(result)
         #expect(out[0] < 0.1)
         #expect(out[fadeInSamples - 1] > 0.9)
+    }
+
+    // MARK: - AudioTimeRange Codable
+
+    @Test func audioTimeRangeRoundTrips() throws {
+        let original = AudioTimeRange(start: 1.5, end: 3.0)
+        let encoded = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(AudioTimeRange.self, from: encoded)
+        #expect(decoded == original)
+    }
+
+    @Test func audioTimeRangeDecodeThrowsWhenStartExceedsEnd() throws {
+        let json = #"{"start": 2.0, "end": 1.0}"#.data(using: .utf8)!
+        #expect(throws: (any Error).self) {
+            try JSONDecoder().decode(AudioTimeRange.self, from: json)
+        }
+    }
+
+    @Test func audioTimeRangeDecodeThrowsWhenStartIsNegative() throws {
+        let json = #"{"start": -1.0, "end": 1.0}"#.data(using: .utf8)!
+        #expect(throws: (any Error).self) {
+            try JSONDecoder().decode(AudioTimeRange.self, from: json)
+        }
     }
 
     // MARK: - loop()

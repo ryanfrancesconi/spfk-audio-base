@@ -124,6 +124,11 @@ extension AVAudioPCMBuffer {
         let sampleRate = format.sampleRate
         let channelCount = Int(format.channelCount)
 
+        let bufferDuration = Double(length) / sampleRate
+        guard inTime + outTime <= bufferDuration else {
+            throw NSError(description: "fade inTime + outTime (\(inTime + outTime)s) exceeds buffer duration (\(bufferDuration)s)")
+        }
+
         let fadeInSamples = Int(sampleRate * inTime)
         let fadeOutStart = Int(Double(length) - sampleRate * outTime)
 
@@ -226,17 +231,17 @@ extension AVAudioPCMBuffer {
         if endTime <= 0 {
             endSample = frameLength
         } else {
-            endSample = AVAudioFrameCount(endTime * sampleRate)
+            endSample = min(AVAudioFrameCount(endTime * sampleRate), frameLength)
             if endSample == 0 {
                 endSample = frameLength
             }
         }
 
-        let frameCapacity = endSample - startSample
-
-        guard frameCapacity > 0 else {
+        guard endSample > startSample else {
             throw NSError(description: "startSample must be before endSample")
         }
+
+        let frameCapacity = endSample - startSample
 
         guard let editedBuffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCapacity) else {
             throw NSError(description: "Failed to create edited buffer")
@@ -249,20 +254,41 @@ extension AVAudioPCMBuffer {
         return editedBuffer
     }
 
+    /// Extract and concatenate multiple time ranges from this buffer.
+    ///
+    /// Ranges are processed in order; the resulting segments are joined into a single
+    /// output buffer. An empty `ranges` array returns the full buffer unchanged.
+    public func extract(ranges: [AudioTimeRange]) throws -> AVAudioPCMBuffer {
+        guard !ranges.isEmpty else { return self }
+
+        let segments = try ranges.map { range in
+            try extract(from: range.start, to: range.end)
+        }
+
+        let totalFrames = segments.reduce(0) { $0 + $1.frameLength }
+
+        guard let output = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: totalFrames) else {
+            throw NSError(description: "Failed to allocate output buffer")
+        }
+
+        for segment in segments {
+            try output.copy(from: segment)
+        }
+
+        return output
+    }
+
     /// Apply an `AudioEditDescription` to this buffer, returning a new processed buffer.
     ///
-    /// Operations are applied in order: trim → reverse → fade.
+    /// Operations are applied in order: extract → reverse → fade.
     /// Returns `self` unchanged when `edit.isEmpty` is true.
     public func applying(_ edit: AudioEditDescription) throws -> AVAudioPCMBuffer {
         guard !edit.isEmpty else { return self }
 
         var buffer = self
 
-        if edit.trimStart > 0 || edit.trimEnd > 0 {
-            let duration = Double(buffer.frameLength) / buffer.format.sampleRate
-            let startTime = min(edit.trimStart, duration)
-            let endTime = max(startTime, duration - edit.trimEnd)
-            buffer = try buffer.extract(from: startTime, to: endTime)
+        if !edit.keepRanges.isEmpty {
+            buffer = try buffer.extract(ranges: edit.keepRanges)
         }
 
         if edit.isReversed {
