@@ -2,7 +2,7 @@
 
 import AudioToolbox
 
-public struct AudioTaper: Sendable {
+public struct AudioTaper: Codable, Equatable, Sendable {
     public var value: AUValue = 3
     public var inverseValue: AUValue { 1 / value }
     public var skew: AUValue = 0.333
@@ -22,6 +22,6 @@ extension AudioTaper {
     /// Straight line
     public static let linear = AudioTaper(value: 1, skew: 0)
 
-    /// Inverse of .audio
+    /// Inverse of .default
     public static let reverseAudio = AudioTaper(value: 1 / 3, skew: 1 / 3)
 }

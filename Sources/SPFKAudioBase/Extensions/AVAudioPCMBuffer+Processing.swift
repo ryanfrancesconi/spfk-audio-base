@@ -1,7 +1,7 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi
 
-@preconcurrency import AVFoundation
 import Accelerate
+@preconcurrency import AVFoundation
 import Foundation
 import SPFKBase
 
@@ -17,58 +17,25 @@ extension AVAudioPCMBuffer {
             throw NSError(description: "Failed to create floatChannelData")
         }
 
-        var value = BufferPeak()
-        var position = 0
+        var result = BufferPeak()
         var peakValue: Float = BufferPeak.min
-        let chunkLength = 512
         let channelCount = Int(format.channelCount)
+        let length = vDSP_Length(frameLength)
 
-        while true {
-            if position + chunkLength >= frameLength {
-                break
-            }
+        for channel in 0 ..< channelCount {
+            var channelPeak: Float = 0
+            var channelPeakIndex: vDSP_Length = 0
+            vDSP_maxmgvi(floatData[channel], 1, &channelPeak, &channelPeakIndex, length)
 
-            for channel in 0 ..< channelCount {
-                var block = Array(repeating: Float(0), count: chunkLength)
-
-                // fill the block with frameLength samples
-                for i in 0 ..< block.count {
-                    if i + position >= frameLength {
-                        break
-                    }
-
-                    block[i] = floatData[channel][i + position]
-                }
-
-                // scan the block
-                let blockPeak = getPeakAmplitude(from: block)
-
-                if blockPeak > peakValue {
-                    value.framePosition = position
-                    value.sampleRate = format.sampleRate
-
-                    peakValue = blockPeak
-                }
-
-                position += block.count
+            if channelPeak > peakValue {
+                peakValue = channelPeak
+                result.framePosition = Int(channelPeakIndex)
+                result.sampleRate = format.sampleRate
             }
         }
 
-        value.amplitude = peakValue
-        return value
-    }
-
-    // Returns the highest level in the given array
-    private func getPeakAmplitude(from buffer: [Float]) -> Float {
-        // create variable with very small value to hold the peak value
-        var peak: Float = BufferPeak.min
-
-        for i in 0 ..< buffer.count {
-            // store the absolute value of the sample
-            let absSample = abs(buffer[i])
-            peak = max(peak, absSample)
-        }
-        return peak
+        result.amplitude = peakValue
+        return result
     }
 
     /// - Returns: A normalized buffer
@@ -86,24 +53,16 @@ extension AVAudioPCMBuffer {
             throw NSError(description: "Failed to create buffer")
         }
 
-        let length: AVAudioFrameCount = frameLength
+        let length = vDSP_Length(frameLength)
         let channelCount = Int(format.channelCount)
+        var gainFactor: Float = 1 / (try peak()).amplitude
 
-        let peak: BufferPeak = try peak()
-
-        let gainFactor: Float = 1 / peak.amplitude
-
-        // i is the index in the buffer
-        for i in 0 ..< Int(length) {
-            // n is the channel
-            for n in 0 ..< channelCount {
-                let sample = floatData[n][i] * gainFactor
-                normalizedBuffer.floatChannelData?[n][i] = sample
-            }
+        for channel in 0 ..< channelCount {
+            guard let dest = normalizedBuffer.floatChannelData?[channel] else { continue }
+            vDSP_vsmul(floatData[channel], 1, &gainFactor, dest, 1, length)
         }
 
-        normalizedBuffer.frameLength = length
-
+        normalizedBuffer.frameLength = frameLength
         return normalizedBuffer
     }
 
@@ -118,23 +77,18 @@ extension AVAudioPCMBuffer {
             throw NSError(description: "Failed to create buffer")
         }
 
-        var j: Int = 0
-        let length: AVAudioFrameCount = frameLength
+        let length = Int(frameLength)
         let channelCount = Int(format.channelCount)
 
-        // i represents the normal buffer read in reverse
-        for i in (0 ..< Int(length)).reversed() {
-            // n is the channel
-            for n in 0 ..< channelCount {
-                // we write the reverseBuffer via the j index
-                reversedBuffer.floatChannelData?[n][j] = floatChannelData?[n][i] ?? 0.0
-            }
-
-            j += 1
+        for channel in 0 ..< channelCount {
+            guard let src = floatChannelData?[channel],
+                  let dest = reversedBuffer.floatChannelData?[channel]
+            else { continue }
+            cblas_scopy(Int32(length), src, 1, dest, 1)
+            vDSP_vrvrs(dest, 1, vDSP_Length(length))
         }
 
-        reversedBuffer.frameLength = length
-
+        reversedBuffer.frameLength = AVAudioFrameCount(length)
         return reversedBuffer
     }
 
@@ -142,10 +96,12 @@ extension AVAudioPCMBuffer {
     /// - Parameters:
     ///   - inTime: Fade In time
     ///   - outTime: Fade Out time
+    ///   - taper: Curve shape applied to both fades (default `.default` — half-pipe audio taper)
     /// - Returns: A new buffer from this one that has fades applied to it
     public func fade(
         inTime: TimeInterval = 0,
-        outTime: TimeInterval = 0
+        outTime: TimeInterval = 0,
+        taper: AudioTaper = .default
     ) throws -> AVAudioPCMBuffer {
         guard inTime > 0 || outTime > 0 else {
             throw NSError(description: "Error fading buffer, inTime or outTime must be > 0")
@@ -168,46 +124,32 @@ extension AVAudioPCMBuffer {
         let sampleRate = format.sampleRate
         let channelCount = Int(format.channelCount)
 
-        // initial starting point for the gain, if there is a fade in, start it at .01 otherwise at 1
-        var gain: Double = inTime > 0 ? 0.01 : 1
-
-        let sampleTime: Double = 1.0 / sampleRate
-        let fadeInPower: Double = exp(log(10) * sampleTime / inTime)
-        let fadeOutPower: Double = exp(-log(25) * sampleTime / outTime)
-
-        // where in the buffer to end the fade in
         let fadeInSamples = Int(sampleRate * inTime)
+        let fadeOutStart = Int(Double(length) - sampleRate * outTime)
 
-        // where in the buffer to start the fade out
-        let fadeOutSamples = Int(Double(length) - (sampleRate * outTime))
-
-        // i is the index in the buffer
         for i in 0 ..< Int(length) {
-            // n is the channel
+            let gain: Float
+
+            if i < fadeInSamples, inTime > 0 {
+                // normalized position in [0, 1] across the fade-in region
+                let t = Double(i + 1) / Double(fadeInSamples)
+                let skewed = pow(t, Double(1.0 / taper.value))
+                gain = Float((skewed * Double(1 - taper.skew) + t * Double(taper.skew)).clamped(to: Double.unitIntervalRange))
+            } else if i >= fadeOutStart, outTime > 0 {
+                // normalized position in [0, 1] across the fade-out region (0 = start of fade, 1 = silence)
+                let t = Double(i - fadeOutStart + 1) / Double(Int(sampleRate * outTime))
+                let skewed = pow(t, Double(1.0 / taper.inverseValue))
+                gain = Float((1.0 - (skewed * Double(1 - taper.skew) + t * Double(taper.skew))).clamped(to: Double.unitIntervalRange))
+            } else {
+                gain = 1.0
+            }
+
             for n in 0 ..< channelCount {
-                if i < fadeInSamples, inTime > 0 {
-                    gain *= fadeInPower
-
-                } else if i > fadeOutSamples, outTime > 0 {
-                    gain *= fadeOutPower
-
-                } else {
-                    gain = 1.0
-                }
-
-                // sanity check
-                gain = gain.clamped(to: Double.unitIntervalRange)
-
-                let adjustedSample = floatChannelData[n][i] * Float(gain)
-
-                fadeBuffer.floatChannelData?[n][i] = adjustedSample
+                fadeBuffer.floatChannelData?[n][i] = floatChannelData[n][i] * gain
             }
         }
 
-        // update this
         fadeBuffer.frameLength = length
-
-        // set the buffer now to be the faded one
         return fadeBuffer
     }
 
@@ -230,7 +172,8 @@ extension AVAudioPCMBuffer {
         guard
             let outBuffer = AVAudioPCMBuffer(
                 pcmFormat: convertToFormat,
-                frameCapacity: AVAudioFrameCount(newFrameCapacity))
+                frameCapacity: AVAudioFrameCount(newFrameCapacity)
+            )
         else {
             throw NSError(description: "Failed to create buffer with format \(convertToFormat.readableDescription)")
         }
@@ -264,5 +207,90 @@ extension AVAudioPCMBuffer {
         @unknown default:
             throw NSError(description: "Unknown status returned")
         }
+    }
+
+    /// Extract a portion of the buffer
+    ///
+    /// - Parameter startTime: The time of the in point of the extraction
+    /// - Parameter endTime: The time of the out point
+    /// - Returns: A new edited AVAudioPCMBuffer
+    public func extract(
+        from startTime: TimeInterval,
+        to endTime: TimeInterval,
+    ) throws -> AVAudioPCMBuffer {
+        let sampleRate = format.sampleRate
+        let startSample = AVAudioFrameCount(max(0, startTime * sampleRate))
+        var endSample: AVAudioFrameCount
+
+        // endTime <= 0 means "use the full buffer length" (same as passing 0 explicitly)
+        if endTime <= 0 {
+            endSample = frameLength
+        } else {
+            endSample = AVAudioFrameCount(endTime * sampleRate)
+            if endSample == 0 {
+                endSample = frameLength
+            }
+        }
+
+        let frameCapacity = endSample - startSample
+
+        guard frameCapacity > 0 else {
+            throw NSError(description: "startSample must be before endSample")
+        }
+
+        guard let editedBuffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCapacity) else {
+            throw NSError(description: "Failed to create edited buffer")
+        }
+
+        guard try editedBuffer.copy(from: self, readOffset: startSample, frames: frameCapacity) > 0 else {
+            throw NSError(description: "Failed to write to edited buffer")
+        }
+
+        return editedBuffer
+    }
+
+    /// Apply an `AudioEditDescription` to this buffer, returning a new processed buffer.
+    ///
+    /// Operations are applied in order: trim → reverse → fade.
+    /// Returns `self` unchanged when `edit.isEmpty` is true.
+    public func applying(_ edit: AudioEditDescription) throws -> AVAudioPCMBuffer {
+        guard !edit.isEmpty else { return self }
+
+        var buffer = self
+
+        if edit.trimStart > 0 || edit.trimEnd > 0 {
+            let duration = Double(buffer.frameLength) / buffer.format.sampleRate
+            let startTime = min(edit.trimStart, duration)
+            let endTime = max(startTime, duration - edit.trimEnd)
+            buffer = try buffer.extract(from: startTime, to: endTime)
+        }
+
+        if edit.isReversed {
+            buffer = try buffer.reverse()
+        }
+
+        if edit.fadeIn > 0 || edit.fadeOut > 0 {
+            buffer = try buffer.fade(inTime: edit.fadeIn, outTime: edit.fadeOut, taper: edit.fadeTaper)
+        }
+
+        return buffer
+    }
+
+    /// Copy the contents of this buffer into a new buffer `numberOfDuplicates` amounts
+    public func loop(numberOfDuplicates: Int) throws -> AVAudioPCMBuffer {
+        guard
+            let duplicatedBuffer = AVAudioPCMBuffer(
+                pcmFormat: format,
+                frameCapacity: frameCapacity * AVAudioFrameCount(numberOfDuplicates),
+            )
+        else {
+            throw NSError(description: "Failed to create new buffer")
+        }
+
+        for _ in 0 ..< numberOfDuplicates {
+            try duplicatedBuffer.copy(from: self)
+        }
+
+        return duplicatedBuffer
     }
 }
