@@ -24,7 +24,7 @@ public actor AudioDefaults {
 
     /// Update to sync to the current device
     public func update(systemFormat newValue: AVAudioFormat) {
-        guard newValue.sampleRate >= minimumSampleRateSupported else {
+        guard !enforceMinimumSampleRate || newValue.sampleRate >= minimumSampleRateSupported else {
             Log.debug(newValue.sampleRate, "isn't a supported sample rate, so ignoring this setting")
             return
         }
