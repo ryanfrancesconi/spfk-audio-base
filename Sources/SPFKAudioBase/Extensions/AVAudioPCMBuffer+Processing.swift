@@ -295,8 +295,8 @@ extension AVAudioPCMBuffer {
             buffer = try buffer.reverse()
         }
 
-        if edit.fadeIn > 0 || edit.fadeOut > 0 {
-            buffer = try buffer.fade(inTime: edit.fadeIn, outTime: edit.fadeOut, taper: edit.fadeTaper)
+        if edit.fade.inTime > 0 || edit.fade.outTime > 0 {
+            buffer = try buffer.fade(inTime: edit.fade.inTime, outTime: edit.fade.outTime, taper: edit.fade.taper)
         }
 
         return buffer

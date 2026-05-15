@@ -27,34 +27,24 @@ public struct AudioEditDescription: Equatable, Sendable {
 
     // MARK: - Fade
 
-    /// Fade-in duration in seconds.
-    public var fadeIn: TimeInterval = 0
-
-    /// Fade-out duration in seconds.
-    public var fadeOut: TimeInterval = 0
-
-    /// Taper curve applied to fade-in and fade-out operations.
-    public var fadeTaper: AudioTaper = .default
+    /// Fade-in, fade-out, and taper curve settings.
+    public var fade: FadeDescription = FadeDescription()
 
     // MARK: -
 
     /// True when no edit operations are set — the description is a no-op.
     public var isEmpty: Bool {
-        keepRanges.isEmpty && fadeIn == 0 && fadeOut == 0 && !isReversed
+        keepRanges.isEmpty && fade.isEmpty && !isReversed
     }
 
     public init(
         keepRanges: [AudioTimeRange] = [],
         isReversed: Bool = false,
-        fadeIn: TimeInterval = 0,
-        fadeOut: TimeInterval = 0,
-        fadeTaper: AudioTaper = .default
+        fade: FadeDescription = FadeDescription()
     ) {
         self.keepRanges = keepRanges
         self.isReversed = isReversed
-        self.fadeIn = fadeIn
-        self.fadeOut = fadeOut
-        self.fadeTaper = fadeTaper
+        self.fade = fade
     }
 }
 
@@ -62,24 +52,31 @@ public struct AudioEditDescription: Equatable, Sendable {
 
 extension AudioEditDescription: Codable {
     private enum CodingKeys: String, CodingKey {
-        case keepRanges, isReversed, fadeIn, fadeOut, fadeTaper
+        case keepRanges, isReversed, fade
+        // Legacy flat-format keys decoded during migration only
+        case fadeIn, fadeOut, fadeTaper
     }
 
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         keepRanges = try c.decodeIfPresent([AudioTimeRange].self, forKey: .keepRanges) ?? []
         isReversed = try c.decodeIfPresent(Bool.self, forKey: .isReversed) ?? false
-        fadeIn = try c.decodeIfPresent(TimeInterval.self, forKey: .fadeIn) ?? 0
-        fadeOut = try c.decodeIfPresent(TimeInterval.self, forKey: .fadeOut) ?? 0
-        fadeTaper = try c.decodeIfPresent(AudioTaper.self, forKey: .fadeTaper) ?? .default
+
+        if let savedFade = try c.decodeIfPresent(FadeDescription.self, forKey: .fade) {
+            fade = savedFade
+        } else {
+            // Migrate from the old flat format where fadeIn/fadeOut/fadeTaper were top-level keys.
+            let fadeIn = try c.decodeIfPresent(TimeInterval.self, forKey: .fadeIn) ?? 0
+            let fadeOut = try c.decodeIfPresent(TimeInterval.self, forKey: .fadeOut) ?? 0
+            let fadeTaper = try c.decodeIfPresent(AudioTaper.self, forKey: .fadeTaper) ?? .default
+            fade = FadeDescription(inTime: fadeIn, outTime: fadeOut, taper: fadeTaper)
+        }
     }
 
     public func encode(to encoder: any Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(keepRanges, forKey: .keepRanges)
         try c.encode(isReversed, forKey: .isReversed)
-        try c.encode(fadeIn, forKey: .fadeIn)
-        try c.encode(fadeOut, forKey: .fadeOut)
-        try c.encode(fadeTaper, forKey: .fadeTaper)
+        try c.encode(fade, forKey: .fade)
     }
 }
