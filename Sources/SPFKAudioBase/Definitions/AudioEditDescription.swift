@@ -9,16 +9,15 @@ import Foundation
 /// Stored on PlaylistElement and persisted to JSON so edits survive app restarts.
 /// Cleared to nil after the edit is rendered and written to disk.
 ///
-/// Operations are applied in pipeline order: extract → reverse → fade.
+/// Operations are applied in pipeline order: trim → reverse → fade.
 public struct AudioEditDescription: Equatable, Sendable {
-    // MARK: - Extract
+    // MARK: - Trim
 
-    /// Ordered list of source time ranges to keep. Ranges are applied in sequence
-    /// and their output is concatenated.
-    ///
-    /// Empty means keep the entire file. A single range [0.2, 0.7] trims head and tail.
-    /// Multiple ranges allow mid-file deletions: [[0, 0.3], [0.6, 1.0]] removes 0.3–0.6 s.
-    public var keepRanges: [AudioTimeRange] = []
+    /// Start of the playback/render window in seconds. 0 means start from the beginning.
+    public var inPoint: TimeInterval = 0
+
+    /// End of the playback/render window in seconds. 0 means play to the end of the file.
+    public var outPoint: TimeInterval = 0
 
     // MARK: - Reverse
 
@@ -34,15 +33,17 @@ public struct AudioEditDescription: Equatable, Sendable {
 
     /// True when no edit operations are set — the description is a no-op.
     public var isEmpty: Bool {
-        keepRanges.isEmpty && fade.isEmpty && !isReversed
+        inPoint == 0 && outPoint == 0 && fade.isEmpty && !isReversed
     }
 
     public init(
-        keepRanges: [AudioTimeRange] = [],
+        inPoint: TimeInterval = 0,
+        outPoint: TimeInterval = 0,
         isReversed: Bool = false,
         fade: FadeDescription = FadeDescription()
     ) {
-        self.keepRanges = keepRanges
+        self.inPoint = inPoint
+        self.outPoint = outPoint
         self.isReversed = isReversed
         self.fade = fade
     }
@@ -52,14 +53,15 @@ public struct AudioEditDescription: Equatable, Sendable {
 
 extension AudioEditDescription: Codable {
     private enum CodingKeys: String, CodingKey {
-        case keepRanges, isReversed, fade
-        // Legacy flat-format keys decoded during migration only
+        case inPoint, outPoint, isReversed, fade
+        // Legacy keys decoded during migration only
         case fadeIn, fadeOut, fadeTaper
     }
 
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        keepRanges = try c.decodeIfPresent([AudioTimeRange].self, forKey: .keepRanges) ?? []
+        inPoint = try c.decodeIfPresent(TimeInterval.self, forKey: .inPoint) ?? 0
+        outPoint = try c.decodeIfPresent(TimeInterval.self, forKey: .outPoint) ?? 0
         isReversed = try c.decodeIfPresent(Bool.self, forKey: .isReversed) ?? false
 
         if let savedFade = try c.decodeIfPresent(FadeDescription.self, forKey: .fade) {
@@ -75,7 +77,8 @@ extension AudioEditDescription: Codable {
 
     public func encode(to encoder: any Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(keepRanges, forKey: .keepRanges)
+        try c.encode(inPoint, forKey: .inPoint)
+        try c.encode(outPoint, forKey: .outPoint)
         try c.encode(isReversed, forKey: .isReversed)
         try c.encode(fade, forKey: .fade)
     }

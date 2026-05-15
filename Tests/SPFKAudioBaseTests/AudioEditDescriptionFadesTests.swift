@@ -85,7 +85,8 @@ struct AudioEditDescriptionFadesTests {
 
     @Test func settingFadesPreservesOtherFields() {
         let original = AudioEditDescription(
-            keepRanges: [AudioTimeRange(start: 0, end: 1)],
+            inPoint: 1.0,
+            outPoint: 5.0,
             isReversed: true,
             fade: FadeDescription(taper: .linear)
         )
@@ -93,13 +94,15 @@ struct AudioEditDescriptionFadesTests {
         #expect(result.fade.inTime == 2)
         #expect(result.fade.outTime == 3)
         #expect(result.isReversed == true)
-        #expect(result.keepRanges.count == 1)
+        #expect(result.inPoint == 1.0)
+        #expect(result.outPoint == 5.0)
         #expect(result.fade.taper == .linear)
     }
 
-    @Test func clearingFadesPreservesKeepRangesAndReverse() {
+    @Test func clearingFadesPreservesInOutPointsAndReverse() {
         let original = AudioEditDescription(
-            keepRanges: [AudioTimeRange(start: 0, end: 1)],
+            inPoint: 1.0,
+            outPoint: 5.0,
             isReversed: true,
             fade: FadeDescription(inTime: 5, outTime: 3)
         )
@@ -107,7 +110,8 @@ struct AudioEditDescriptionFadesTests {
         #expect(result.fade.inTime == 0)
         #expect(result.fade.outTime == 0)
         #expect(result.isReversed == true)
-        #expect(result.keepRanges.count == 1)
+        #expect(result.inPoint == 1.0)
+        #expect(result.outPoint == 5.0)
     }
 
     @Test func clearingFadesOnFadesOnlyDescriptionIsEmpty() {

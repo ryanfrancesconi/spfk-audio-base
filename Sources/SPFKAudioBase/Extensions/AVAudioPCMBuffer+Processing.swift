@@ -280,15 +280,17 @@ extension AVAudioPCMBuffer {
 
     /// Apply an `AudioEditDescription` to this buffer, returning a new processed buffer.
     ///
-    /// Operations are applied in order: extract → reverse → fade.
+    /// Operations are applied in order: trim → reverse → fade.
     /// Returns `self` unchanged when `edit.isEmpty` is true.
     public func applying(_ edit: AudioEditDescription) throws -> AVAudioPCMBuffer {
         guard !edit.isEmpty else { return self }
 
         var buffer = self
 
-        if !edit.keepRanges.isEmpty {
-            buffer = try buffer.extract(ranges: edit.keepRanges)
+        if edit.inPoint > 0 || edit.outPoint > 0 {
+            let start = edit.inPoint
+            let end = edit.outPoint > 0 ? edit.outPoint : Double(buffer.frameLength) / buffer.format.sampleRate
+            buffer = try buffer.extract(from: start, to: end)
         }
 
         if edit.isReversed {
