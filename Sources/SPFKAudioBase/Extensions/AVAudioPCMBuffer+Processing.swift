@@ -254,30 +254,6 @@ extension AVAudioPCMBuffer {
         return editedBuffer
     }
 
-    /// Extract and concatenate multiple time ranges from this buffer.
-    ///
-    /// Ranges are processed in order; the resulting segments are joined into a single
-    /// output buffer. An empty `ranges` array returns the full buffer unchanged.
-    public func extract(ranges: [AudioTimeRange]) throws -> AVAudioPCMBuffer {
-        guard !ranges.isEmpty else { return self }
-
-        let segments = try ranges.map { range in
-            try extract(from: range.start, to: range.end)
-        }
-
-        let totalFrames = segments.reduce(0) { $0 + $1.frameLength }
-
-        guard let output = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: totalFrames) else {
-            throw NSError(description: "Failed to allocate output buffer")
-        }
-
-        for segment in segments {
-            try output.copy(from: segment)
-        }
-
-        return output
-    }
-
     /// Apply an `AudioEditDescription` to this buffer, returning a new processed buffer.
     ///
     /// Operations are applied in order: trim → reverse → fade.

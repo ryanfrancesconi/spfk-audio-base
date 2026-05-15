@@ -276,29 +276,6 @@ class AVAudioPCMBufferProcessingTests {
         #expect(out[fadeInSamples - 1] > 0.9)
     }
 
-    // MARK: - AudioTimeRange Codable
-
-    @Test func audioTimeRangeRoundTrips() throws {
-        let original = AudioTimeRange(start: 1.5, end: 3.0)
-        let encoded = try JSONEncoder().encode(original)
-        let decoded = try JSONDecoder().decode(AudioTimeRange.self, from: encoded)
-        #expect(decoded == original)
-    }
-
-    @Test func audioTimeRangeDecodeThrowsWhenStartExceedsEnd() throws {
-        let json = #"{"start": 2.0, "end": 1.0}"#.data(using: .utf8)!
-        #expect(throws: (any Error).self) {
-            try JSONDecoder().decode(AudioTimeRange.self, from: json)
-        }
-    }
-
-    @Test func audioTimeRangeDecodeThrowsWhenStartIsNegative() throws {
-        let json = #"{"start": -1.0, "end": 1.0}"#.data(using: .utf8)!
-        #expect(throws: (any Error).self) {
-            try JSONDecoder().decode(AudioTimeRange.self, from: json)
-        }
-    }
-
     // MARK: - loop()
 
     @Test func loopTotalFrameCountIsMultiple() throws {
