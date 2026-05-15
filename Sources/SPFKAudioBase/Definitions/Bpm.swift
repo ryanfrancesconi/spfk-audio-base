@@ -76,6 +76,26 @@ public struct Bpm: Equatable, Sendable, Comparable, Hashable, Codable {
         return isMultiple(of: testValue, tolerance: tolerance)
     }
 
+    /// Returns a new `Bpm` octave-shifted by multiplying or dividing by 2 until
+    /// it falls within `range`. Returns `nil` if it cannot be brought into range.
+    public func clamped(to range: ClosedRange<Float>) -> Bpm? {
+        var value = rawValue
+        let lo = Double(range.lowerBound)
+        let hi = Double(range.upperBound)
+
+        while value < lo {
+            value *= 2
+            if value > hi { return nil }
+        }
+
+        while value > hi {
+            value /= 2
+            if value < lo { return nil }
+        }
+
+        return Bpm(value.rounded(.toNearestOrAwayFromZero))
+    }
+
     /// Returns whether this tempo is an octave-equivalent multiple of `rhs`.
     ///
     /// Checks 1/8x through 8x multiples. When `tolerance` is greater than zero,
