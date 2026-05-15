@@ -287,9 +287,9 @@ extension AVAudioPCMBuffer {
 
         var buffer = self
 
-        if edit.inPoint > 0 || edit.outPoint > 0 {
-            let start = edit.inPoint
-            let end = edit.outPoint > 0 ? edit.outPoint : Double(buffer.frameLength) / buffer.format.sampleRate
+        if !edit.trim.isEmpty {
+            let start = edit.trim.inPoint
+            let end = edit.trim.outPoint > 0 ? edit.trim.outPoint : Double(buffer.frameLength) / buffer.format.sampleRate
             buffer = try buffer.extract(from: start, to: end)
         }
 

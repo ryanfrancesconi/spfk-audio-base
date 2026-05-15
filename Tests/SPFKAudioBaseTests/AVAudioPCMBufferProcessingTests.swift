@@ -231,7 +231,7 @@ class AVAudioPCMBufferProcessingTests {
     @Test func applyingInOutPointReducesFrameLength() throws {
         // 10 frames at 10 Hz. inPoint=0.2, outPoint=0.7 → frames [2,3,4,5,6] = 5 frames.
         let buffer = makeBuffer(channels: [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]], sampleRate: 10)
-        let edit = AudioEditDescription(inPoint: 0.2, outPoint: 0.7)
+        let edit = AudioEditDescription(trim: TrimDescription(inPoint: 0.2, outPoint: 0.7))
         let result = try buffer.applying(edit)
         #expect(result.frameLength == 5)
         #expect(samples(result) == [2, 3, 4, 5, 6])
@@ -240,7 +240,7 @@ class AVAudioPCMBufferProcessingTests {
     @Test func applyingInPointOnlyTrimsHead() throws {
         // 10 frames at 10 Hz. inPoint=0.6 → frames [6,7,8,9] = 4 frames.
         let buffer = makeBuffer(channels: [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]], sampleRate: 10)
-        let edit = AudioEditDescription(inPoint: 0.6)
+        let edit = AudioEditDescription(trim: TrimDescription(inPoint: 0.6))
         let result = try buffer.applying(edit)
         #expect(result.frameLength == 4)
         #expect(samples(result) == [6, 7, 8, 9])
@@ -256,7 +256,7 @@ class AVAudioPCMBufferProcessingTests {
     @Test func applyingInOutPointThenReversePipelineOrder() throws {
         // 10 frames at 10 Hz. inPoint=0.1, outPoint=0.5 → frames [1,2,3,4]. Reversed: [4,3,2,1].
         let buffer = makeBuffer(channels: [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]], sampleRate: 10)
-        let edit = AudioEditDescription(inPoint: 0.1, outPoint: 0.5, isReversed: true)
+        let edit = AudioEditDescription(trim: TrimDescription(inPoint: 0.1, outPoint: 0.5), isReversed: true)
         let result = try buffer.applying(edit)
         #expect(samples(result) == [4, 3, 2, 1])
     }

@@ -13,11 +13,8 @@ import Foundation
 public struct AudioEditDescription: Equatable, Sendable {
     // MARK: - Trim
 
-    /// Start of the playback/render window in seconds. 0 means start from the beginning.
-    public var inPoint: TimeInterval = 0
-
-    /// End of the playback/render window in seconds. 0 means play to the end of the file.
-    public var outPoint: TimeInterval = 0
+    /// In/out trim window settings.
+    public var trim: TrimDescription = TrimDescription()
 
     // MARK: - Reverse
 
@@ -33,17 +30,15 @@ public struct AudioEditDescription: Equatable, Sendable {
 
     /// True when no edit operations are set — the description is a no-op.
     public var isEmpty: Bool {
-        inPoint == 0 && outPoint == 0 && fade.isEmpty && !isReversed
+        trim.isEmpty && fade.isEmpty && !isReversed
     }
 
     public init(
-        inPoint: TimeInterval = 0,
-        outPoint: TimeInterval = 0,
+        trim: TrimDescription = TrimDescription(),
         isReversed: Bool = false,
         fade: FadeDescription = FadeDescription()
     ) {
-        self.inPoint = inPoint
-        self.outPoint = outPoint
+        self.trim = trim
         self.isReversed = isReversed
         self.fade = fade
     }
@@ -53,16 +48,23 @@ public struct AudioEditDescription: Equatable, Sendable {
 
 extension AudioEditDescription: Codable {
     private enum CodingKeys: String, CodingKey {
-        case inPoint, outPoint, isReversed, fade
-        // Legacy keys decoded during migration only
-        case fadeIn, fadeOut, fadeTaper
+        case trim, isReversed, fade
+        // Legacy flat-format keys decoded during migration only
+        case inPoint, outPoint, fadeIn, fadeOut, fadeTaper
     }
 
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        inPoint = try c.decodeIfPresent(TimeInterval.self, forKey: .inPoint) ?? 0
-        outPoint = try c.decodeIfPresent(TimeInterval.self, forKey: .outPoint) ?? 0
         isReversed = try c.decodeIfPresent(Bool.self, forKey: .isReversed) ?? false
+
+        if let savedTrim = try c.decodeIfPresent(TrimDescription.self, forKey: .trim) {
+            trim = savedTrim
+        } else {
+            // Migrate from the prior flat format where inPoint/outPoint were top-level keys.
+            let inPoint = try c.decodeIfPresent(TimeInterval.self, forKey: .inPoint) ?? 0
+            let outPoint = try c.decodeIfPresent(TimeInterval.self, forKey: .outPoint) ?? 0
+            trim = TrimDescription(inPoint: inPoint, outPoint: outPoint)
+        }
 
         if let savedFade = try c.decodeIfPresent(FadeDescription.self, forKey: .fade) {
             fade = savedFade
@@ -77,8 +79,7 @@ extension AudioEditDescription: Codable {
 
     public func encode(to encoder: any Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(inPoint, forKey: .inPoint)
-        try c.encode(outPoint, forKey: .outPoint)
+        try c.encode(trim, forKey: .trim)
         try c.encode(isReversed, forKey: .isReversed)
         try c.encode(fade, forKey: .fade)
     }
