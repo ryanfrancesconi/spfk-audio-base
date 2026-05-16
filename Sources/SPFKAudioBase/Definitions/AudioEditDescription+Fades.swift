@@ -34,30 +34,37 @@ extension AudioEditDescription {
         settingFades(inTime: 0, outTime: 0)
     }
 
-    /// Returns fade durations derived from a waveform selection.
+    /// Returns fade durations derived from a waveform selection, respecting any trim region.
     ///
-    /// When the selection starts at or near time 0 (within `tolerance`), the fade-in equals the
-    /// selection duration. When it ends at or near the file duration, the fade-out equals the
-    /// selection duration. Both can apply when the selection spans the entire file.
+    /// The fade-in applies when the selection starts at or before the trim start (inPoint, or
+    /// time 0 when no trim is set). Its duration is measured from the trim start to the selection
+    /// end — not from the selection start — so the fade covers the region actually drawn.
     ///
-    /// Returns `nil` when the selection is fully interior — no boundary is touched and no
+    /// The fade-out applies when the selection ends at or after the trim end (outPoint, or the
+    /// file duration when no trim is set). Its duration is measured from the selection start to
+    /// the trim end for the same reason.
+    ///
+    /// Returns `nil` when the selection is fully interior — no trim boundary is touched and no
     /// meaningful fade can be inferred.
     public static func selectionFades(
         selectionStart: TimeInterval,
         selectionEnd: TimeInterval,
         duration: TimeInterval,
+        trim: TrimDescription = TrimDescription(),
         tolerance: TimeInterval = 0.001
     ) -> (inTime: TimeInterval, outTime: TimeInterval)? {
-        let selDuration = selectionEnd - selectionStart
-        guard selDuration > 0, duration > 0 else { return nil }
+        guard selectionEnd > selectionStart, duration > 0 else { return nil }
 
-        let atStart = selectionStart < tolerance
-        let atEnd = selectionEnd > duration - tolerance
+        let trimStart = trim.inPoint
+        let trimEnd = trim.outPoint > 0 ? trim.outPoint : duration
+
+        let atStart = selectionStart <= trimStart + tolerance
+        let atEnd = selectionEnd >= trimEnd - tolerance
         guard atStart || atEnd else { return nil }
 
         return (
-            inTime: atStart ? selDuration : 0,
-            outTime: atEnd ? selDuration : 0
+            inTime: atStart ? max(0, selectionEnd - trimStart) : 0,
+            outTime: atEnd ? max(0, trimEnd - selectionStart) : 0
         )
     }
 }
