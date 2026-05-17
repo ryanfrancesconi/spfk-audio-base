@@ -1,3 +1,4 @@
+import Accelerate
 import AVFoundation
 import Foundation
 import SPFKBase
@@ -30,7 +31,44 @@ public struct BufferPeak: Equatable {
 
     public init(url: URL) throws {
         let avfile = try AVAudioFile(forReading: url)
-        let value = try avfile.toAVAudioPCMBuffer().peak()
-        self = value
+        let format = avfile.processingFormat
+        let totalFrames = AVAudioFrameCount(avfile.length)
+        let channelCount = Int(format.channelCount)
+
+        guard totalFrames > 0, channelCount > 0 else { return }
+
+        let chunkSize: AVAudioFrameCount = 4096
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: chunkSize) else { return }
+
+        sampleRate = format.sampleRate
+
+        var position: AVAudioFrameCount = 0
+        var runningMax: Float = 0
+        var peakFrame: Int = 0
+
+        while position < totalFrames {
+            let framesToRead = Swift.min(chunkSize, totalFrames - position)
+            avfile.framePosition = AVAudioFramePosition(position)
+            try avfile.read(into: buffer, frameCount: framesToRead)
+
+            guard let data = buffer.floatChannelData else { break }
+            let frameLength = vDSP_Length(buffer.frameLength)
+
+            for ch in 0 ..< channelCount {
+                var chMax: Float = 0
+                var chMaxIdx: vDSP_Length = 0
+                vDSP_maxmgvi(data[ch], 1, &chMax, &chMaxIdx, frameLength)
+
+                if chMax > runningMax {
+                    runningMax = chMax
+                    peakFrame = Int(position) + Int(chMaxIdx)
+                }
+            }
+
+            position += AVAudioFrameCount(buffer.frameLength)
+        }
+
+        amplitude = runningMax
+        framePosition = peakFrame
     }
 }
