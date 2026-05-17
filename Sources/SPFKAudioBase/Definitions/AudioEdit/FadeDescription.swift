@@ -33,24 +33,12 @@ public struct FadeDescription: Equatable, Sendable {
 extension FadeDescription: Codable {
     private enum CodingKeys: String, CodingKey {
         case inTime, outTime, taper
-        // Migration from prior format that used fadeIn/fadeOut/fadeTaper as keys
-        case fadeIn, fadeOut, fadeTaper
     }
 
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        inTime = try c.decodeIfPresent(TimeInterval.self, forKey: .inTime)
-            ?? c.decodeIfPresent(TimeInterval.self, forKey: .fadeIn) ?? 0
-        outTime = try c.decodeIfPresent(TimeInterval.self, forKey: .outTime)
-            ?? c.decodeIfPresent(TimeInterval.self, forKey: .fadeOut) ?? 0
-        taper = try c.decodeIfPresent(AudioTaper.self, forKey: .taper)
-            ?? c.decodeIfPresent(AudioTaper.self, forKey: .fadeTaper) ?? .default
-    }
-
-    public func encode(to encoder: any Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(inTime, forKey: .inTime)
-        try c.encode(outTime, forKey: .outTime)
-        try c.encode(taper, forKey: .taper)
+        inTime = try c.decodeIfPresent(TimeInterval.self, forKey: .inTime) ?? 0
+        outTime = try c.decodeIfPresent(TimeInterval.self, forKey: .outTime) ?? 0
+        taper = try c.decodeIfPresent(AudioTaper.self, forKey: .taper) ?? .default
     }
 }
