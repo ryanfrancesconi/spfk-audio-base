@@ -307,8 +307,13 @@ extension AVAudioPCMBuffer {
             buffer = try buffer.gain(edit.normalize.gain)
         }
 
-        let fadeIn  = trimmed ? max(edit.fade.inTime,  deClick) : edit.fade.inTime
-        let fadeOut = trimmed ? max(edit.fade.outTime, deClick) : edit.fade.outTime
+        // Only apply de-click when the trimmed buffer is long enough for non-overlapping fades.
+        // Skipping it for very short buffers prevents the fade guard from throwing.
+        let deClickSamples = Int(buffer.format.sampleRate * deClick)
+        let canDeClick = trimmed && deClickSamples > 0 && deClickSamples * 2 <= Int(buffer.frameLength)
+
+        let fadeIn  = canDeClick ? max(edit.fade.inTime, deClick) : edit.fade.inTime
+        let fadeOut = canDeClick ? max(edit.fade.outTime, deClick) : edit.fade.outTime
 
         if fadeIn > 0 || fadeOut > 0 {
             buffer = try buffer.fade(inTime: fadeIn, outTime: fadeOut, taper: edit.fade.taper)
