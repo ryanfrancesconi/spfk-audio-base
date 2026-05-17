@@ -257,9 +257,35 @@ extension AVAudioPCMBuffer {
         return editedBuffer
     }
 
+    /// Multiply all samples in this buffer by a linear gain factor.
+    /// Returns `self` unchanged when `factor` is effectively unity.
+    public func gain(_ factor: AUValue) throws -> AVAudioPCMBuffer {
+        guard abs(factor - 1) >= 0.001 else { return self }
+
+        guard let src = floatChannelData else {
+            throw NSError(description: "floatChannelData is nil")
+        }
+
+        guard let output = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCapacity) else {
+            throw NSError(description: "Failed to create gain buffer")
+        }
+
+        var g = factor
+        let length = vDSP_Length(frameLength)
+        let channelCount = Int(format.channelCount)
+
+        for ch in 0 ..< channelCount {
+            guard let dest = output.floatChannelData?[ch] else { continue }
+            vDSP_vsmul(src[ch], 1, &g, dest, 1, length)
+        }
+
+        output.frameLength = frameLength
+        return output
+    }
+
     /// Apply an `AudioEditDescription` to this buffer, returning a new processed buffer.
     ///
-    /// Operations are applied in order: trim → reverse → fade.
+    /// Operations are applied in pipeline order: trim → normalize → fade.
     /// Returns `self` unchanged when `edit.isEmpty` is true.
     public func applying(_ edit: AudioEditDescription) throws -> AVAudioPCMBuffer {
         guard !edit.isEmpty else { return self }
@@ -275,6 +301,10 @@ extension AVAudioPCMBuffer {
             let end = edit.trim.outPoint > 0 ? edit.trim.outPoint : Double(buffer.frameLength) / buffer.format.sampleRate
             buffer = try buffer.extract(from: start, to: end)
             trimmed = true
+        }
+
+        if !edit.normalize.isEmpty {
+            buffer = try buffer.gain(edit.normalize.gain)
         }
 
         let fadeIn  = trimmed ? max(edit.fade.inTime,  deClick) : edit.fade.inTime
