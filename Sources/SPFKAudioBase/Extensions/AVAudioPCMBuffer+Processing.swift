@@ -130,19 +130,22 @@ extension AVAudioPCMBuffer {
         }
 
         let fadeInSamples = Int(sampleRate * inTime)
-        let fadeOutStart = Int(Double(length) - sampleRate * outTime)
+        let fadeOutSamples = Int(sampleRate * outTime)
+        let fadeOutStart = Int(length) - fadeOutSamples
 
         for i in 0 ..< Int(length) {
             let gain: Float
 
             if i < fadeInSamples, inTime > 0 {
                 // normalized position in [0, 1] across the fade-in region
+                // fadeInSamples > 0 is guaranteed: i >= 0 and i < fadeInSamples implies fadeInSamples >= 1
                 let t = Double(i + 1) / Double(fadeInSamples)
                 let skewed = pow(t, Double(taper.value))
                 gain = Float((skewed * Double(1 - taper.skew) + t * Double(taper.skew)).clamped(to: Double.unitIntervalRange))
-            } else if i >= fadeOutStart, outTime > 0 {
+            } else if i >= fadeOutStart, outTime > 0, fadeOutSamples > 0 {
                 // normalized position in [0, 1] across the fade-out region (0 = start of fade, 1 = silence)
-                let t = Double(i - fadeOutStart + 1) / Double(Int(sampleRate * outTime))
+                // fadeOutSamples > 0 guards against division by zero when outTime is positive but sub-sample
+                let t = Double(i - fadeOutStart + 1) / Double(fadeOutSamples)
                 let skewed = pow(t, Double(taper.inverseValue))
                 gain = Float((1.0 - (skewed * Double(1 - taper.skew) + t * Double(taper.skew))).clamped(to: Double.unitIntervalRange))
             } else {
@@ -261,20 +264,28 @@ extension AVAudioPCMBuffer {
     public func applying(_ edit: AudioEditDescription) throws -> AVAudioPCMBuffer {
         guard !edit.isEmpty else { return self }
 
+        // 5 ms de-click applied at trim boundaries to prevent pops from non-zero-crossing cuts.
+        let deClick: TimeInterval = 0.005
+
         var buffer = self
+        var trimmed = false
 
         if !edit.trim.isEmpty {
             let start = edit.trim.inPoint
             let end = edit.trim.outPoint > 0 ? edit.trim.outPoint : Double(buffer.frameLength) / buffer.format.sampleRate
             buffer = try buffer.extract(from: start, to: end)
+            trimmed = true
         }
 
         if edit.isReversed {
             buffer = try buffer.reverse()
         }
 
-        if edit.fade.inTime > 0 || edit.fade.outTime > 0 {
-            buffer = try buffer.fade(inTime: edit.fade.inTime, outTime: edit.fade.outTime, taper: edit.fade.taper)
+        let fadeIn  = trimmed ? max(edit.fade.inTime,  deClick) : edit.fade.inTime
+        let fadeOut = trimmed ? max(edit.fade.outTime, deClick) : edit.fade.outTime
+
+        if fadeIn > 0 || fadeOut > 0 {
+            buffer = try buffer.fade(inTime: fadeIn, outTime: fadeOut, taper: edit.fade.taper)
         }
 
         return buffer

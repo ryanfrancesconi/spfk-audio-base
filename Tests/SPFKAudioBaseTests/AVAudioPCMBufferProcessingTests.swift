@@ -276,6 +276,60 @@ class AVAudioPCMBufferProcessingTests {
         #expect(out[fadeInSamples - 1] > 0.9)
     }
 
+    // MARK: - applying(_:) de-click fades
+
+    @Test func applyingTrimDeClicksStartAndEnd() throws {
+        // All-ones at 44100 Hz, 1 s total. Trim to 0–0.5 s.
+        // No explicit fade, so the 5 ms de-click must attenuate the first and last samples.
+        let sampleRate: Double = 44100
+        let buffer = makeBuffer(
+            channels: [Array(repeating: Float(1.0), count: Int(sampleRate))],
+            sampleRate: sampleRate
+        )
+        let edit = AudioEditDescription(trim: TrimDescription(inPoint: 0, outPoint: 0.5))
+        let result = try buffer.applying(edit)
+        let out = samples(result)
+        // First sample is inside the 5 ms fade-in — must be well below 1.
+        #expect(out[0] < 0.1)
+        // Last sample is in the final frame of the 5 ms fade-out — gain is near 0.
+        #expect(out[out.count - 1] < 1e-5)
+    }
+
+    @Test func applyingTrimExplicitFadeLongerThanDeClickWins() throws {
+        // Explicit 0.1 s fade-in is longer than the 5 ms de-click; it should take effect.
+        // At 0.05 s into a 0.1 s fade the gain is still rising, so the sample is < 1.
+        // Past 0.1 s the gain is 1 and the all-ones input passes through unmodified.
+        let sampleRate: Double = 44100
+        let buffer = makeBuffer(
+            channels: [Array(repeating: Float(1.0), count: Int(sampleRate))],
+            sampleRate: sampleRate
+        )
+        let edit = AudioEditDescription(
+            trim: TrimDescription(inPoint: 0, outPoint: 0.5),
+            fade: FadeDescription(inTime: 0.1)
+        )
+        let result = try buffer.applying(edit)
+        let out = samples(result)
+        // Mid-way through the 0.1 s fade — still rising.
+        #expect(out[Int(sampleRate * 0.05)] < 1.0)
+        // Just past the 0.1 s fade boundary — at full gain.
+        #expect(out[Int(sampleRate * 0.11)] > 0.99)
+    }
+
+    @Test func applyingNoTrimDoesNotDeClick() throws {
+        // A reverse-only edit carries no trim, so no de-click fade should be added.
+        // All samples must remain at their original amplitude.
+        let buffer = makeBuffer(
+            channels: [Array(repeating: Float(0.5), count: 4410)],
+            sampleRate: 44100
+        )
+        let edit = AudioEditDescription(isReversed: true)
+        let result = try buffer.applying(edit)
+        for s in samples(result) {
+            #expect(abs(s - 0.5) < 1e-5)
+        }
+    }
+
     // MARK: - loop()
 
     @Test func loopTotalFrameCountIsMultiple() throws {
