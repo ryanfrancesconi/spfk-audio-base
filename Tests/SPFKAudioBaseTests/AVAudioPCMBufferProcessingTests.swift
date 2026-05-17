@@ -246,21 +246,6 @@ class AVAudioPCMBufferProcessingTests {
         #expect(samples(result) == [6, 7, 8, 9])
     }
 
-    @Test func applyingReverseFlipsContent() throws {
-        let buffer = makeBuffer(channels: [[1, 2, 3, 4, 5]])
-        let edit = AudioEditDescription(isReversed: true)
-        let result = try buffer.applying(edit)
-        #expect(samples(result) == [5, 4, 3, 2, 1])
-    }
-
-    @Test func applyingInOutPointThenReversePipelineOrder() throws {
-        // 10 frames at 10 Hz. inPoint=0.1, outPoint=0.5 → frames [1,2,3,4]. Reversed: [4,3,2,1].
-        let buffer = makeBuffer(channels: [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]], sampleRate: 10)
-        let edit = AudioEditDescription(trim: TrimDescription(inPoint: 0.1, outPoint: 0.5), isReversed: true)
-        let result = try buffer.applying(edit)
-        #expect(samples(result) == [4, 3, 2, 1])
-    }
-
     @Test func applyingFadeInOnConstantSignal() throws {
         // All-ones, fade in 0.1 s. First output sample must be near 0, last of fade near 1.
         let sampleRate: Double = 44100
@@ -314,20 +299,6 @@ class AVAudioPCMBufferProcessingTests {
         #expect(out[Int(sampleRate * 0.05)] < 1.0)
         // Just past the 0.1 s fade boundary — at full gain.
         #expect(out[Int(sampleRate * 0.11)] > 0.99)
-    }
-
-    @Test func applyingNoTrimDoesNotDeClick() throws {
-        // A reverse-only edit carries no trim, so no de-click fade should be added.
-        // All samples must remain at their original amplitude.
-        let buffer = makeBuffer(
-            channels: [Array(repeating: Float(0.5), count: 4410)],
-            sampleRate: 44100
-        )
-        let edit = AudioEditDescription(isReversed: true)
-        let result = try buffer.applying(edit)
-        for s in samples(result) {
-            #expect(abs(s - 0.5) < 1e-5)
-        }
     }
 
     // MARK: - loop()

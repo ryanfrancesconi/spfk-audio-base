@@ -20,7 +20,7 @@ extension AudioEditDescription {
     }
 
     /// Returns a copy with `inTime` and `outTime` replaced by the given values.
-    /// All other fields (`trim`, `isReversed`, `fade.taper`) are preserved.
+    /// All other fields (`trim`, `fade.taper`) are preserved.
     public func settingFades(inTime: TimeInterval, outTime: TimeInterval) -> AudioEditDescription {
         var copy = self
         copy.fade.inTime = inTime
@@ -29,7 +29,7 @@ extension AudioEditDescription {
     }
 
     /// Returns a copy with both fades zeroed.
-    /// All other fields (`trim`, `isReversed`, `fade.taper`) are preserved.
+    /// All other fields (`trim`, `fade.taper`) are preserved.
     public func clearingFades() -> AudioEditDescription {
         settingFades(inTime: 0, outTime: 0)
     }

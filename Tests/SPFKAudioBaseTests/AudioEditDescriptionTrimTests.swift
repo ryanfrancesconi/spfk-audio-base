@@ -15,10 +15,9 @@ struct AudioEditDescriptionTrimTests {
     @Test func settingTrimPreservesOtherFields() {
         let fade = FadeDescription(inTime: 1.0, outTime: 2.0, taper: .linear)
         let trim = TrimDescription(inPoint: 0.5, outPoint: 3.0)
-        let original = AudioEditDescription(isReversed: true, fade: fade)
+        let original = AudioEditDescription(fade: fade)
         let result = original.settingTrim(trim)
         #expect(result.trim == trim)
-        #expect(result.isReversed == true)
         #expect(result.fade == fade)
     }
 
@@ -32,10 +31,9 @@ struct AudioEditDescriptionTrimTests {
     @Test func clearingTrimPreservesOtherFields() {
         let fade = FadeDescription(inTime: 1.0, outTime: 2.0)
         let trim = TrimDescription(inPoint: 0.5, outPoint: 3.0)
-        let original = AudioEditDescription(trim: trim, isReversed: true, fade: fade)
+        let original = AudioEditDescription(trim: trim, fade: fade)
         let result = original.clearingTrim()
         #expect(result.trim.isEmpty)
-        #expect(result.isReversed == true)
         #expect(result.fade == fade)
     }
 

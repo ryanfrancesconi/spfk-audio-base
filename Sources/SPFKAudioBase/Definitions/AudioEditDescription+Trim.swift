@@ -4,7 +4,7 @@ import Foundation
 
 extension AudioEditDescription {
     /// Returns a copy with `trim` replaced by the given value.
-    /// All other fields (`fade`, `isReversed`) are preserved.
+    /// All other fields (`fade`) are preserved.
     public func settingTrim(_ trim: TrimDescription) -> AudioEditDescription {
         var copy = self
         copy.trim = trim
@@ -12,7 +12,7 @@ extension AudioEditDescription {
     }
 
     /// Returns a copy with trim cleared to a default `TrimDescription()`.
-    /// All other fields (`fade`, `isReversed`) are preserved.
+    /// All other fields (`fade`) are preserved.
     public func clearingTrim() -> AudioEditDescription {
         settingTrim(TrimDescription())
     }

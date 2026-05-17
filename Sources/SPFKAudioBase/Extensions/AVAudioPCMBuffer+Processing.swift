@@ -277,10 +277,6 @@ extension AVAudioPCMBuffer {
             trimmed = true
         }
 
-        if edit.isReversed {
-            buffer = try buffer.reverse()
-        }
-
         let fadeIn  = trimmed ? max(edit.fade.inTime,  deClick) : edit.fade.inTime
         let fadeOut = trimmed ? max(edit.fade.outTime, deClick) : edit.fade.outTime
 
