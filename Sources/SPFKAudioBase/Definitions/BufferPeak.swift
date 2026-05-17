@@ -29,7 +29,7 @@ public struct BufferPeak: Equatable {
         self.amplitude = amplitude
     }
 
-    public init(url: URL) throws {
+    public init(url: URL) async throws {
         let avfile = try AVAudioFile(forReading: url)
         let format = avfile.processingFormat
         let totalFrames = AVAudioFrameCount(avfile.length)
@@ -47,6 +47,7 @@ public struct BufferPeak: Equatable {
         var peakFrame: Int = 0
 
         while position < totalFrames {
+            try Task.checkCancellation()
             let framesToRead = Swift.min(chunkSize, totalFrames - position)
             avfile.framePosition = AVAudioFramePosition(position)
             try avfile.read(into: buffer, frameCount: framesToRead)
