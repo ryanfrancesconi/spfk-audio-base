@@ -51,6 +51,13 @@ public struct Bpm: Equatable, Sendable, Comparable, Hashable, Codable {
         rawValue.truncatingRemainder(dividingBy: 1) == 0
     }
 
+    /// Creates a `Bpm` from its string representation, returning `nil` if the string is not
+    /// parseable as a positive number.
+    public init?(parsing string: String) {
+        guard let double = Double(string) else { return nil }
+        self.init(double)
+    }
+
     /// Creates a `Bpm` value, returning `nil` if `rawValue` is not positive.
     public init?(_ rawValue: Double) {
         guard rawValue > 0 else {
@@ -105,6 +112,20 @@ public struct Bpm: Equatable, Sendable, Comparable, Hashable, Codable {
             return multiples.contains(rhs.rawValue)
         }
         return multiples.contains { abs($0 - rhs.rawValue) <= tolerance }
+    }
+}
+
+extension Bpm {
+    /// Returns a validated `Bpm` for `value` using ``clamped(to:)`` for octave-folding.
+    ///
+    /// Non-positive values are raised to the lower bound of ``tempoRange`` before folding.
+    /// Out-of-range values are folded by halving or doubling (e.g. 2048 → 1024).
+    /// Returns `nil` only if octave-folding cannot bring the value into range.
+    public static func validate(_ value: Double) -> Bpm? {
+        let range = Float(tempoRange.lowerBound.rawValue) ... Float(tempoRange.upperBound.rawValue)
+        let positiveValue = max(tempoRange.lowerBound.rawValue, value)
+        guard let bpm = Bpm(positiveValue) else { return nil }
+        return bpm.clamped(to: range)
     }
 }
 
