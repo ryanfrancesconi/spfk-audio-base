@@ -13,7 +13,7 @@ struct AudioEditDescriptionTrimTests {
     }
 
     @Test func settingTrimPreservesOtherFields() {
-        let fade = FadeDescription(inTime: 1.0, outTime: 2.0, taper: .linear)
+        let fade = FadeDescription(inTime: 1.0, outTime: 2.0, inTaper: .linear, outTaper: .linear)
         let trim = TrimDescription(inPoint: 0.5, outPoint: 3.0)
         let original = AudioEditDescription(fade: fade)
         let result = original.settingTrim(trim)

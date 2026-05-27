@@ -96,12 +96,14 @@ extension AVAudioPCMBuffer {
     /// - Parameters:
     ///   - inTime: Fade In time
     ///   - outTime: Fade Out time
-    ///   - taper: Curve shape applied to both fades (default `.default` — half-pipe audio taper)
+    ///   - inTaper: Curve shape applied to the fade-in (default `.default`)
+    ///   - outTaper: Curve shape applied to the fade-out (default `.default`)
     /// - Returns: A new buffer from this one that has fades applied to it
     public func fade(
         inTime: TimeInterval = 0,
         outTime: TimeInterval = 0,
-        taper: AudioTaper = .default
+        inTaper: AudioTaper = .default,
+        outTaper: AudioTaper = .default
     ) throws -> AVAudioPCMBuffer {
         guard inTime > 0 || outTime > 0 else {
             throw NSError(description: "Error fading buffer, inTime or outTime must be > 0")
@@ -140,14 +142,14 @@ extension AVAudioPCMBuffer {
                 // normalized position in [0, 1] across the fade-in region
                 // fadeInSamples > 0 is guaranteed: i >= 0 and i < fadeInSamples implies fadeInSamples >= 1
                 let t = Double(i + 1) / Double(fadeInSamples)
-                let skewed = pow(t, Double(taper.value))
-                gain = Float((skewed * Double(1 - taper.skew) + t * Double(taper.skew)).clamped(to: Double.unitIntervalRange))
+                let skewed = pow(t, Double(inTaper.value))
+                gain = Float((skewed * Double(1 - inTaper.skew) + t * Double(inTaper.skew)).clamped(to: Double.unitIntervalRange))
             } else if i >= fadeOutStart, outTime > 0, fadeOutSamples > 0 {
                 // normalized position in [0, 1] across the fade-out region (0 = start of fade, 1 = silence)
                 // fadeOutSamples > 0 guards against division by zero when outTime is positive but sub-sample
                 let t = Double(i - fadeOutStart + 1) / Double(fadeOutSamples)
-                let skewed = pow(t, Double(taper.inverseValue))
-                gain = Float((1.0 - (skewed * Double(1 - taper.skew) + t * Double(taper.skew))).clamped(to: Double.unitIntervalRange))
+                let skewed = pow(t, Double(outTaper.inverseValue))
+                gain = Float((1.0 - (skewed * Double(1 - outTaper.skew) + t * Double(outTaper.skew))).clamped(to: Double.unitIntervalRange))
             } else {
                 gain = 1.0
             }
@@ -316,7 +318,7 @@ extension AVAudioPCMBuffer {
         let fadeOut = canDeClick ? max(edit.fade.outTime, deClick) : edit.fade.outTime
 
         if fadeIn > 0 || fadeOut > 0 {
-            buffer = try buffer.fade(inTime: fadeIn, outTime: fadeOut, taper: edit.fade.taper)
+            buffer = try buffer.fade(inTime: fadeIn, outTime: fadeOut, inTaper: edit.fade.inTaper, outTaper: edit.fade.outTaper)
         }
 
         return buffer

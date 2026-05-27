@@ -1,6 +1,7 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-audio-base
 
 import AudioToolbox
+import CoreGraphics
 
 /// Describes the shape of a fade or gain-ramp curve via a power-law exponent and a blend weight.
 ///
@@ -56,4 +57,49 @@ extension AudioTaper {
 
     /// Convex (fast-start) curve — the mirror image of ``default``.
     public static let reverseAudio = AudioTaper(value: 1 / 3, skew: 1 / 3)
+
+    /// All named presets in display order: default → linear → reverseAudio.
+    public static let presets: [AudioTaper] = [.default, .linear, .reverseAudio]
+
+    /// Returns the preset at `index`, or `nil` if out of range.
+    public static func preset(at index: Int) -> AudioTaper? {
+        guard presets.indices.contains(index) else { return nil }
+        return presets[index]
+    }
+
+    /// Index of this taper in ``presets``, or `nil` if it is not a named preset.
+    public var presetIndex: Int? { AudioTaper.presets.firstIndex(of: self) }
+}
+
+// MARK: - Curve
+
+extension AudioTaper {
+    /// Gain value at normalized position `t` ∈ [0, 1] using the blend formula.
+    /// Matches the evaluation used in `RegionFadeDescription.gainAt(playbackOffset:)`.
+    public func gainAt(t: Double) -> Double {
+        let taper1 = pow(t, Double(value))
+        let taper2 = 1.0 - pow(1.0 - t, Double(inverseValue))
+        let result = taper1 * Double(1 - skew) + taper2 * Double(skew)
+        return max(0.0, min(1.0, result))
+    }
+
+    /// Returns a `CGPath` tracing the gain curve for this taper across `rect`.
+    /// - Parameters:
+    ///   - flipped: `false` = fade-in orientation (bottom-left → top-right);
+    ///              `true`  = fade-out orientation (top-left → bottom-right).
+    ///   - steps: Number of line segments. Higher values produce smoother curves.
+    public func curvePath(in rect: CGRect, flipped: Bool = false, steps: Int = 40) -> CGPath {
+        let path = CGMutablePath()
+        for i in 0 ... steps {
+            let t = Double(i) / Double(steps)
+            let gain = gainAt(t: t)
+            let x = rect.minX + rect.width * (flipped ? (1.0 - t) : t)
+            let y = flipped
+                ? rect.minY + rect.height * (1.0 - gain)
+                : rect.maxY - rect.height * gain
+            let point = CGPoint(x: x, y: y)
+            if i == 0 { path.move(to: point) } else { path.addLine(to: point) }
+        }
+        return path
+    }
 }

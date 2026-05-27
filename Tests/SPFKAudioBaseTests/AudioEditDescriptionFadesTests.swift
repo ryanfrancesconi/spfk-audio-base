@@ -155,14 +155,15 @@ struct AudioEditDescriptionFadesTests {
     @Test func settingFadesPreservesOtherFields() {
         let original = AudioEditDescription(
             trim: TrimDescription(inPoint: 1.0, outPoint: 5.0),
-            fade: FadeDescription(taper: .linear)
+            fade: FadeDescription(inTaper: .linear, outTaper: .linear)
         )
         let result = original.settingFades(inTime: 2, outTime: 3)
         #expect(result.fade.inTime == 2)
         #expect(result.fade.outTime == 3)
         #expect(result.trim.inPoint == 1.0)
         #expect(result.trim.outPoint == 5.0)
-        #expect(result.fade.taper == .linear)
+        #expect(result.fade.inTaper == .linear)
+        #expect(result.fade.outTaper == .linear)
     }
 
     @Test func clearingFadesPreservesTrim() {

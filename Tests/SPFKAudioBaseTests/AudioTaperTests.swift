@@ -48,4 +48,88 @@ struct AudioTaperTests {
             )
         }
     }
+
+    // MARK: - Presets index
+
+    @Test func presetsContainsAllThreeNamed() {
+        #expect(AudioTaper.presets.count == 3)
+    }
+
+    @Test func presetIndexRoundTrips() {
+        for taper in AudioTaper.presets {
+            let index = taper.presetIndex
+            #expect(index != nil)
+            #expect(AudioTaper.preset(at: index!) == taper)
+        }
+    }
+
+    @Test func presetAtOutOfRangeReturnsNil() {
+        #expect(AudioTaper.preset(at: -1) == nil)
+        #expect(AudioTaper.preset(at: 99) == nil)
+    }
+
+    @Test func customTaperHasNoPresetIndex() {
+        let custom = AudioTaper(value: 2, skew: 0.1)
+        #expect(custom.presetIndex == nil)
+    }
+
+    // MARK: - gainAt
+
+    @Test func gainAtBoundaries() {
+        for taper in AudioTaper.presets {
+            #expect(taper.gainAt(t: 0).isApproximatelyEqual(to: 0, absoluteTolerance: 0.0001))
+            #expect(taper.gainAt(t: 1).isApproximatelyEqual(to: 1, absoluteTolerance: 0.0001))
+        }
+    }
+
+    @Test func gainAtMidpointLinear() {
+        #expect(AudioTaper.linear.gainAt(t: 0.5).isApproximatelyEqual(to: 0.5, absoluteTolerance: 0.0001))
+    }
+
+    @Test func gainAtMidpointDefaultIsConcave() {
+        // Default (concave) curve: gain at midpoint is well below 0.5
+        let mid = AudioTaper.default.gainAt(t: 0.5)
+        #expect(mid < 0.5)
+        #expect(mid.isApproximatelyEqual(to: 0.152, absoluteTolerance: 0.001))
+    }
+
+    @Test func gainAtMidpointReverseAudioIsConvex() {
+        // ReverseAudio (convex) curve: gain at midpoint is well above 0.5
+        let mid = AudioTaper.reverseAudio.gainAt(t: 0.5)
+        #expect(mid > 0.5)
+        #expect(mid.isApproximatelyEqual(to: 0.820, absoluteTolerance: 0.001))
+    }
+
+    @Test func gainAtIsMonotonicallyIncreasing() {
+        for taper in AudioTaper.presets {
+            var prev = 0.0
+            for i in 1 ... 20 {
+                let gain = taper.gainAt(t: Double(i) / 20.0)
+                #expect(gain >= prev)
+                prev = gain
+            }
+        }
+    }
+
+    // MARK: - curvePath
+
+    @Test func curvePathStartAndEndFadeIn() {
+        let rect = CGRect(x: 0, y: 0, width: 100, height: 50)
+        let path = AudioTaper.default.curvePath(in: rect, flipped: false)
+        let box = path.boundingBox
+
+        // path starts near bottom-left (gain=0) and ends near top-right (gain=1)
+        #expect(box.minX.isApproximatelyEqual(to: 0, absoluteTolerance: 1))
+        #expect(box.maxX.isApproximatelyEqual(to: 100, absoluteTolerance: 1))
+    }
+
+    @Test func curvePathStartAndEndFadeOut() {
+        let rect = CGRect(x: 0, y: 0, width: 100, height: 50)
+        let path = AudioTaper.default.curvePath(in: rect, flipped: true)
+        let box = path.boundingBox
+
+        // flipped path spans the same horizontal extent
+        #expect(box.minX.isApproximatelyEqual(to: 0, absoluteTolerance: 1))
+        #expect(box.maxX.isApproximatelyEqual(to: 100, absoluteTolerance: 1))
+    }
 }
