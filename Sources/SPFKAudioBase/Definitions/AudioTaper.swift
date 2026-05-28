@@ -83,6 +83,15 @@ extension AudioTaper {
         return max(0.0, min(1.0, result))
     }
 
+    /// Gain value at normalized fade-out position `s` ∈ [0, 1] (0 = fade start, 1 = silence).
+    /// Mirror of ``gainAt(t:)`` for the descending ramp: uses the inverse exponent for the
+    /// concave term and the forward exponent for the convex term.
+    public func fadeOutGainAt(s: Double) -> Double {
+        let t1 = 1.0 - pow(s, Double(inverseValue))
+        let t2 = pow(1.0 - s, Double(value))
+        return max(0.0, min(1.0, t1 * Double(1 - skew) + t2 * Double(skew)))
+    }
+
     /// Returns a `CGPath` tracing the gain curve for this taper across `rect`.
     /// - Parameters:
     ///   - flipped: `false` = fade-in orientation (bottom-left → top-right);

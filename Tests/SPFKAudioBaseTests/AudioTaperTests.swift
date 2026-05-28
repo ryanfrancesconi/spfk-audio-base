@@ -111,6 +111,44 @@ struct AudioTaperTests {
         }
     }
 
+    // MARK: - fadeOutGainAt
+
+    @Test func fadeOutGainAtBoundaries() {
+        for taper in AudioTaper.presets {
+            #expect(taper.fadeOutGainAt(s: 0).isApproximatelyEqual(to: 1, absoluteTolerance: 0.0001))
+            #expect(taper.fadeOutGainAt(s: 1).isApproximatelyEqual(to: 0, absoluteTolerance: 0.0001))
+        }
+    }
+
+    @Test func fadeOutGainAtMidpointLinear() {
+        #expect(AudioTaper.linear.fadeOutGainAt(s: 0.5).isApproximatelyEqual(to: 0.5, absoluteTolerance: 0.0001))
+    }
+
+    @Test func fadeOutGainAtMidpointDefault() {
+        // Default taper fade-out drops quickly then levels off; midpoint is well below 0.5
+        let mid = AudioTaper.default.fadeOutGainAt(s: 0.5)
+        #expect(mid < 0.5)
+        #expect(mid.isApproximatelyEqual(to: 0.179, absoluteTolerance: 0.001))
+    }
+
+    @Test func fadeOutGainAtMidpointReverseAudio() {
+        // ReverseAudio taper fade-out holds high then drops; midpoint is well above 0.5
+        let mid = AudioTaper.reverseAudio.fadeOutGainAt(s: 0.5)
+        #expect(mid > 0.5)
+        #expect(mid.isApproximatelyEqual(to: 0.848, absoluteTolerance: 0.001))
+    }
+
+    @Test func fadeOutGainAtIsMonotonicallyDecreasing() {
+        for taper in AudioTaper.presets {
+            var prev = 1.0
+            for i in 1 ... 20 {
+                let gain = taper.fadeOutGainAt(s: Double(i) / 20.0)
+                #expect(gain <= prev)
+                prev = gain
+            }
+        }
+    }
+
     // MARK: - curvePath
 
     @Test func curvePathStartAndEndFadeIn() {
