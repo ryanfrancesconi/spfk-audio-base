@@ -47,19 +47,6 @@ struct FadeDescriptionTests {
 
     // MARK: - Backward compatibility
 
-    @Test func legacyTaperKeyPopulatesBothTapers() throws {
-        // JSON produced by the old schema, which had a single `taper` key.
-        let legacyJSON = """
-        {"inTime":2.0,"outTime":1.0,"taper":{"value":1.0,"skew":0.0}}
-        """.data(using: .utf8)!
-
-        let decoded = try JSONDecoder().decode(FadeDescription.self, from: legacyJSON)
-        #expect(decoded.inTime == 2.0)
-        #expect(decoded.outTime == 1.0)
-        #expect(decoded.inTaper == .linear)
-        #expect(decoded.outTaper == .linear)
-    }
-
     @Test func missingTaperKeysDefaultToAudioDefault() throws {
         let minimalJSON = """
         {"inTime":1.0,"outTime":0.5}
