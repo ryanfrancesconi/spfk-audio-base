@@ -8,11 +8,11 @@ import Foundation
 ///
 /// Wraps ``AudioSilenceScanner`` to locate non-silent frame ranges, then converts
 /// each range to seconds, applies pre/post-roll padding, and discards segments
-/// shorter than ``StemSegmentDetectorOptions/minimumSegmentDuration``.
-public struct StemSegmentDetector: Sendable {
-    public let options: StemSegmentDetectorOptions
+/// shorter than ``SegmentDetectorOptions/minimumSegmentDuration``.
+public struct SegmentDetector: Sendable {
+    public let options: SegmentDetectorOptions
 
-    public init(options: StemSegmentDetectorOptions = StemSegmentDetectorOptions()) {
+    public init(options: SegmentDetectorOptions = SegmentDetectorOptions()) {
         self.options = options
     }
 

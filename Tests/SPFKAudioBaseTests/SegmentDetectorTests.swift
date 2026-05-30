@@ -9,8 +9,8 @@ import Testing
 @testable import SPFKAudioBase
 
 @Suite(.tags(.file))
-struct StemSegmentDetectorTests {
-    // Threshold matching StemSegmentDetectorOptions default of -60 dBFS.
+struct SegmentDetectorTests {
+    // Threshold matching SegmentDetectorOptions default of -60 dBFS.
     private let audioLevel: Float = 0.5
 
     // MARK: - Segment count
@@ -25,11 +25,11 @@ struct StemSegmentDetectorTests {
         ])
         defer { try? FileManager.default.removeItem(at: url) }
 
-        var options = StemSegmentDetectorOptions()
+        var options = SegmentDetectorOptions()
         options.preRollPadding = 0
         options.postRollPadding = 0
 
-        let segments = try await StemSegmentDetector(options: options).detect(in: AVAudioFile(forReading: url))
+        let segments = try await SegmentDetector(options: options).detect(in: AVAudioFile(forReading: url))
         #expect(segments.count == 2)
     }
 
@@ -43,11 +43,11 @@ struct StemSegmentDetectorTests {
         ])
         defer { try? FileManager.default.removeItem(at: url) }
 
-        var options = StemSegmentDetectorOptions()
+        var options = SegmentDetectorOptions()
         options.preRollPadding = 0
         options.postRollPadding = 0
 
-        let segments = try await StemSegmentDetector(options: options).detect(in: AVAudioFile(forReading: url))
+        let segments = try await SegmentDetector(options: options).detect(in: AVAudioFile(forReading: url))
         #expect(segments.count == 1)
     }
 
@@ -63,12 +63,12 @@ struct StemSegmentDetectorTests {
         ])
         defer { try? FileManager.default.removeItem(at: url) }
 
-        var options = StemSegmentDetectorOptions()
+        var options = SegmentDetectorOptions()
         options.minimumSegmentDuration = 0.05
         options.preRollPadding = 0
         options.postRollPadding = 0
 
-        let segments = try await StemSegmentDetector(options: options).detect(in: AVAudioFile(forReading: url))
+        let segments = try await SegmentDetector(options: options).detect(in: AVAudioFile(forReading: url))
         #expect(segments.count == 2)
     }
 
@@ -77,7 +77,7 @@ struct StemSegmentDetectorTests {
         let (url, _) = try AudioTestFile.make(segments: [(44100, 0.0)])
         defer { try? FileManager.default.removeItem(at: url) }
 
-        let segments = try await StemSegmentDetector().detect(in: AVAudioFile(forReading: url))
+        let segments = try await SegmentDetector().detect(in: AVAudioFile(forReading: url))
         #expect(segments.isEmpty)
     }
 
@@ -86,11 +86,11 @@ struct StemSegmentDetectorTests {
         let (url, _) = try AudioTestFile.make(segments: [(44100, audioLevel)])
         defer { try? FileManager.default.removeItem(at: url) }
 
-        var options = StemSegmentDetectorOptions()
+        var options = SegmentDetectorOptions()
         options.preRollPadding = 0
         options.postRollPadding = 0
 
-        let segments = try await StemSegmentDetector(options: options).detect(in: AVAudioFile(forReading: url))
+        let segments = try await SegmentDetector(options: options).detect(in: AVAudioFile(forReading: url))
         #expect(segments.count == 1)
         #expect(segments[0].inPoint == 0)
         #expect(abs(segments[0].outPoint - 1.0) < 0.001)
@@ -109,11 +109,11 @@ struct StemSegmentDetectorTests {
         ])
         defer { try? FileManager.default.removeItem(at: url) }
 
-        var options = StemSegmentDetectorOptions()
+        var options = SegmentDetectorOptions()
         options.preRollPadding = 0
         options.postRollPadding = 0
 
-        let segments = try await StemSegmentDetector(options: options).detect(in: AVAudioFile(forReading: url))
+        let segments = try await SegmentDetector(options: options).detect(in: AVAudioFile(forReading: url))
         #expect(segments.count == 1)
         #expect(abs(segments[0].inPoint - 4410.0 / sampleRate) < 0.001)
         #expect(abs(segments[0].outPoint - 8820.0 / sampleRate) < 0.001)
@@ -131,11 +131,11 @@ struct StemSegmentDetectorTests {
         ])
         defer { try? FileManager.default.removeItem(at: url) }
 
-        var options = StemSegmentDetectorOptions()
+        var options = SegmentDetectorOptions()
         options.preRollPadding = 0.05
         options.postRollPadding = 0
 
-        let segments = try await StemSegmentDetector(options: options).detect(in: AVAudioFile(forReading: url))
+        let segments = try await SegmentDetector(options: options).detect(in: AVAudioFile(forReading: url))
         #expect(segments.count == 1)
         let expected = (4410.0 - 0.05 * sampleRate) / sampleRate // 4410 - 2205 = 2205 frames = 0.05 s
         #expect(abs(segments[0].inPoint - expected) < 0.001)
@@ -151,11 +151,11 @@ struct StemSegmentDetectorTests {
         ])
         defer { try? FileManager.default.removeItem(at: url) }
 
-        var options = StemSegmentDetectorOptions()
+        var options = SegmentDetectorOptions()
         options.preRollPadding = 0
         options.postRollPadding = 0.05
 
-        let segments = try await StemSegmentDetector(options: options).detect(in: AVAudioFile(forReading: url))
+        let segments = try await SegmentDetector(options: options).detect(in: AVAudioFile(forReading: url))
         #expect(segments.count == 1)
         let expected = (4410.0 + 0.05 * sampleRate) / sampleRate // frame 6615 / 44100 = 0.15 s
         #expect(abs(segments[0].outPoint - expected) < 0.001)
@@ -166,11 +166,11 @@ struct StemSegmentDetectorTests {
         let (url, _) = try AudioTestFile.make(segments: [(44100, audioLevel)])
         defer { try? FileManager.default.removeItem(at: url) }
 
-        var options = StemSegmentDetectorOptions()
+        var options = SegmentDetectorOptions()
         options.preRollPadding = 0.5
         options.postRollPadding = 0
 
-        let segments = try await StemSegmentDetector(options: options).detect(in: AVAudioFile(forReading: url))
+        let segments = try await SegmentDetector(options: options).detect(in: AVAudioFile(forReading: url))
         #expect(segments.count == 1)
         #expect(segments[0].inPoint == 0)
     }
@@ -180,11 +180,11 @@ struct StemSegmentDetectorTests {
         let (url, _) = try AudioTestFile.make(segments: [(44100, audioLevel)])
         defer { try? FileManager.default.removeItem(at: url) }
 
-        var options = StemSegmentDetectorOptions()
+        var options = SegmentDetectorOptions()
         options.preRollPadding = 0
         options.postRollPadding = 0.5
 
-        let segments = try await StemSegmentDetector(options: options).detect(in: AVAudioFile(forReading: url))
+        let segments = try await SegmentDetector(options: options).detect(in: AVAudioFile(forReading: url))
         #expect(segments.count == 1)
         #expect(abs(segments[0].outPoint - 1.0) < 0.001)
     }
