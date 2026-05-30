@@ -1,6 +1,7 @@
 import AVFoundation
 import Foundation
 import SPFKBase
+import SPFKTesting
 import Testing
 
 @testable import SPFKAudioBase
@@ -16,7 +17,7 @@ struct AudioSilenceScannerTests {
     @Test("leadingSilenceEnd returns onset frame after multi-chunk leading silence")
     func leadingSilenceEndDetected() async throws {
         let silenceFrames = 5000 // spans two 4096-frame chunks
-        let (url, _) = try makeAudioFile(segments: [
+        let (url, _) = try AudioTestFile.make(segments: [
             (silenceFrames, 0.0),
             (2000, audioLevel),
         ])
@@ -30,7 +31,7 @@ struct AudioSilenceScannerTests {
 
     @Test("leadingSilenceEnd returns 0 when audio starts at frame zero")
     func leadingSilenceEndNone() async throws {
-        let (url, _) = try makeAudioFile(segments: [(3000, audioLevel)])
+        let (url, _) = try AudioTestFile.make(segments: [(3000, audioLevel)])
         defer { try? FileManager.default.removeItem(at: url) }
 
         let scanner = AudioSilenceScanner(silenceThreshold: threshold)
@@ -41,7 +42,7 @@ struct AudioSilenceScannerTests {
 
     @Test("leadingSilenceEnd returns nil for fully silent file")
     func leadingSilenceEndAllSilent() async throws {
-        let (url, _) = try makeAudioFile(segments: [(4000, 0.0)])
+        let (url, _) = try AudioTestFile.make(segments: [(4000, 0.0)])
         defer { try? FileManager.default.removeItem(at: url) }
 
         let scanner = AudioSilenceScanner(silenceThreshold: threshold)
@@ -55,7 +56,7 @@ struct AudioSilenceScannerTests {
     @Test("trailingSilenceStart returns last audio frame before multi-chunk trailing silence")
     func trailingSilenceStartDetected() async throws {
         let audioFrames = 3000
-        let (url, _) = try makeAudioFile(segments: [
+        let (url, _) = try AudioTestFile.make(segments: [
             (audioFrames, audioLevel),
             (5000, 0.0), // spans two 4096-frame chunks
         ])
@@ -70,7 +71,7 @@ struct AudioSilenceScannerTests {
     @Test("trailingSilenceStart returns last frame when no trailing silence")
     func trailingSilenceStartNone() async throws {
         let frameCount = 3000
-        let (url, _) = try makeAudioFile(segments: [(frameCount, audioLevel)])
+        let (url, _) = try AudioTestFile.make(segments: [(frameCount, audioLevel)])
         defer { try? FileManager.default.removeItem(at: url) }
 
         let scanner = AudioSilenceScanner(silenceThreshold: threshold)
@@ -81,7 +82,7 @@ struct AudioSilenceScannerTests {
 
     @Test("trailingSilenceStart returns nil for fully silent file")
     func trailingSilenceStartAllSilent() async throws {
-        let (url, _) = try makeAudioFile(segments: [(4000, 0.0)])
+        let (url, _) = try AudioTestFile.make(segments: [(4000, 0.0)])
         defer { try? FileManager.default.removeItem(at: url) }
 
         let scanner = AudioSilenceScanner(silenceThreshold: threshold)
@@ -103,7 +104,7 @@ struct AudioSilenceScannerTests {
         let region1Start = leadSilence
         let region2Start = leadSilence + region1Length + gapSilence
 
-        let (url, _) = try makeAudioFile(segments: [
+        let (url, _) = try AudioTestFile.make(segments: [
             (leadSilence, 0.0),
             (region1Length, audioLevel),
             (gapSilence, 0.0),
@@ -131,7 +132,7 @@ struct AudioSilenceScannerTests {
         let gap = 100   // ~2ms at 44.1kHz — below minimumSilenceDuration of 100ms
         let block2 = 2000
 
-        let (url, _) = try makeAudioFile(segments: [
+        let (url, _) = try AudioTestFile.make(segments: [
             (block1, audioLevel),
             (gap, 0.0),
             (block2, audioLevel),
@@ -151,7 +152,7 @@ struct AudioSilenceScannerTests {
 
     @Test("nonSilentRegions returns empty for fully silent file")
     func nonSilentRegionsAllSilent() async throws {
-        let (url, _) = try makeAudioFile(segments: [(4000, 0.0)])
+        let (url, _) = try AudioTestFile.make(segments: [(4000, 0.0)])
         defer { try? FileManager.default.removeItem(at: url) }
 
         let scanner = AudioSilenceScanner(silenceThreshold: threshold)
@@ -165,7 +166,7 @@ struct AudioSilenceScannerTests {
     @Test("samples at exactly the threshold amplitude are treated as silence")
     func thresholdBoundary() async throws {
         // Frame 0 = exactly threshold (should be silent), frame 1 = just above
-        let (url, _) = try makeAudioFile(segments: [
+        let (url, _) = try AudioTestFile.make(segments: [
             (1, threshold),           // == threshold → silent
             (3000, threshold * 1.01), // > threshold → audio
         ])
@@ -175,40 +176,5 @@ struct AudioSilenceScannerTests {
         let result = try await scanner.leadingSilenceEnd(in: AVAudioFile(forReading: url))
 
         #expect(result == 1)
-    }
-
-    // MARK: - Helpers
-
-    private func makeAudioFile(
-        sampleRate: Double = 44100,
-        channelCount: AVAudioChannelCount = 1,
-        segments: [(Int, Float)]
-    ) throws -> (url: URL, totalFrames: Int) {
-        let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: channelCount)!
-        let totalFrames = segments.reduce(0) { $0 + $1.0 }
-
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(totalFrames)) else {
-            throw NSError(description: "Failed to allocate PCM buffer")
-        }
-        buffer.frameLength = AVAudioFrameCount(totalFrames)
-
-        guard let floatData = buffer.floatChannelData else {
-            throw NSError(description: "No float channel data")
-        }
-
-        var offset = 0
-        for (count, amplitude) in segments {
-            for i in 0 ..< count {
-                for ch in 0 ..< Int(channelCount) {
-                    floatData[ch][offset + i] = amplitude
-                }
-            }
-            offset += count
-        }
-
-        let url = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent("silence_scanner_test_\(UUID().uuidString).wav")
-        _ = try AVAudioFile(url: url, fromBuffer: buffer)
-        return (url, totalFrames)
     }
 }
