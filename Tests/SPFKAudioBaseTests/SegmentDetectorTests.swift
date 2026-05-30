@@ -188,4 +188,73 @@ struct SegmentDetectorTests {
         #expect(segments.count == 1)
         #expect(abs(segments[0].outPoint - 1.0) < 0.001)
     }
+
+    // MARK: - linearThreshold
+
+    @Test("linearThreshold converts dBFS to linear amplitude correctly")
+    func linearThresholdFormula() {
+        // 0 dBFS is full scale: 10^(0/20) = 1.0
+        #expect(abs(SegmentDetectorOptions(silenceThreshold: 0).linearThreshold - 1.0) < 0.0001)
+        // -20 dBFS: 10^(-20/20) = 10^(-1) = 0.1
+        #expect(abs(SegmentDetectorOptions(silenceThreshold: -20).linearThreshold - 0.1) < 0.0001)
+        // -60 dBFS: 10^(-60/20) = 10^(-3) = 0.001
+        #expect(abs(SegmentDetectorOptions(silenceThreshold: -60).linearThreshold - 0.001) < 0.00001)
+    }
+
+    // MARK: - Padding and minimum duration interaction
+
+    @Test("padding is applied before minimum-duration filter so it can rescue an otherwise-discarded segment")
+    func paddingRescuesShortSegment() async throws {
+        // Raw audio: 441 frames ≈ 10 ms — below minimumSegmentDuration of 100 ms without padding.
+        // With 50 ms pre-roll + 50 ms post-roll the padded window is ≈ 110 ms → passes filter.
+        let (url, _) = try AudioTestFile.make(segments: [
+            (4410, 0.0),       // 100 ms leading silence — room for pre-roll
+            (441, audioLevel), // 10 ms audio burst
+            (4410, 0.0),       // 100 ms trailing silence — room for post-roll
+        ])
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        var options = SegmentDetectorOptions()
+        options.minimumSegmentDuration = 0.1  // 100 ms
+        options.preRollPadding = 0.05
+        options.postRollPadding = 0.05
+
+        let segments = try await SegmentDetector(options: options).detect(in: AVAudioFile(forReading: url))
+        // Without padding: 10 ms raw < 100 ms minimum → filtered. With padding: ~110 ms → kept.
+        #expect(segments.count == 1)
+    }
+
+    // MARK: - Codable
+
+    @Test("SegmentDetectorOptions encodes and decodes without data loss")
+    func codableRoundTrip() throws {
+        var options = SegmentDetectorOptions()
+        options.silenceThreshold = -40
+        options.minimumSilenceDuration = 0.25
+        options.minimumSegmentDuration = 1.0
+        options.preRollPadding = 0.01
+        options.postRollPadding = 0.02
+
+        let data = try JSONEncoder().encode(options)
+        let decoded = try JSONDecoder().decode(SegmentDetectorOptions.self, from: data)
+
+        #expect(decoded.silenceThreshold == options.silenceThreshold)
+        #expect(decoded.minimumSilenceDuration == options.minimumSilenceDuration)
+        #expect(decoded.minimumSegmentDuration == options.minimumSegmentDuration)
+        #expect(decoded.preRollPadding == options.preRollPadding)
+        #expect(decoded.postRollPadding == options.postRollPadding)
+    }
+
+    @Test("SegmentDetectorOptions decoding falls back to defaults when all fields are absent")
+    func codableMissingFieldsUseDefaults() throws {
+        let data = "{}".data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(SegmentDetectorOptions.self, from: data)
+        let defaults = SegmentDetectorOptions()
+
+        #expect(decoded.silenceThreshold == defaults.silenceThreshold)
+        #expect(decoded.minimumSilenceDuration == defaults.minimumSilenceDuration)
+        #expect(decoded.minimumSegmentDuration == defaults.minimumSegmentDuration)
+        #expect(decoded.preRollPadding == defaults.preRollPadding)
+        #expect(decoded.postRollPadding == defaults.postRollPadding)
+    }
 }
