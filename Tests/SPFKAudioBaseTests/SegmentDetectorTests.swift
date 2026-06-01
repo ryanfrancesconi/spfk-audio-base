@@ -26,6 +26,7 @@ struct SegmentDetectorTests {
         defer { try? FileManager.default.removeItem(at: url) }
 
         var options = SegmentDetectorOptions()
+        options.minimumSegmentDuration = 0.05  // segments are 100 ms; bypass the duration filter
         options.preRollPadding = 0
         options.postRollPadding = 0
 
@@ -44,6 +45,7 @@ struct SegmentDetectorTests {
         defer { try? FileManager.default.removeItem(at: url) }
 
         var options = SegmentDetectorOptions()
+        options.minimumSegmentDuration = 0.05  // bridged segment is ~250 ms; bypass the duration filter
         options.preRollPadding = 0
         options.postRollPadding = 0
 
@@ -110,6 +112,7 @@ struct SegmentDetectorTests {
         defer { try? FileManager.default.removeItem(at: url) }
 
         var options = SegmentDetectorOptions()
+        options.minimumSegmentDuration = 0.05  // segment is 0.1 s; keep it below that so it isn't filtered
         options.preRollPadding = 0
         options.postRollPadding = 0
 
@@ -132,6 +135,7 @@ struct SegmentDetectorTests {
         defer { try? FileManager.default.removeItem(at: url) }
 
         var options = SegmentDetectorOptions()
+        options.minimumSegmentDuration = 0.05  // padded segment is ~150 ms; bypass the duration filter
         options.preRollPadding = 0.05
         options.postRollPadding = 0
 
@@ -152,6 +156,7 @@ struct SegmentDetectorTests {
         defer { try? FileManager.default.removeItem(at: url) }
 
         var options = SegmentDetectorOptions()
+        options.minimumSegmentDuration = 0.05  // padded segment is ~150 ms; bypass the duration filter
         options.preRollPadding = 0
         options.postRollPadding = 0.05
 
