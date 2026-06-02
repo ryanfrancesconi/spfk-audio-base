@@ -5,7 +5,7 @@ import Foundation
 /// Configuration for non-silent region detection in an audio file.
 /// Used by ``SegmentDetector`` to control threshold, gap bridging,
 /// minimum region length, and boundary padding.
-public struct SegmentDetectorOptions: Sendable, Codable {
+public struct SegmentDetectorOptions: Equatable, Sendable, Codable {
     /// Silence threshold in dBFS. Samples at or below this level are treated as silence.
     /// Range: -96...0. Default: -60 dB.
     public var silenceThreshold: Float = -60
