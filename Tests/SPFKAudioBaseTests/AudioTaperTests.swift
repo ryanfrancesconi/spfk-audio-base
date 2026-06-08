@@ -73,29 +73,29 @@ struct AudioTaperTests {
         #expect(custom.presetIndex == nil)
     }
 
-    // MARK: - gainAt
+    // MARK: - gain(at:)
 
     @Test func gainAtBoundaries() {
         for taper in AudioTaper.presets {
-            #expect(taper.gainAt(t: 0).isApproximatelyEqual(to: 0, absoluteTolerance: 0.0001))
-            #expect(taper.gainAt(t: 1).isApproximatelyEqual(to: 1, absoluteTolerance: 0.0001))
+            #expect(taper.gain(at: 0).isApproximatelyEqual(to: 0, absoluteTolerance: 0.0001))
+            #expect(taper.gain(at: 1).isApproximatelyEqual(to: 1, absoluteTolerance: 0.0001))
         }
     }
 
     @Test func gainAtMidpointLinear() {
-        #expect(AudioTaper.linear.gainAt(t: 0.5).isApproximatelyEqual(to: 0.5, absoluteTolerance: 0.0001))
+        #expect(AudioTaper.linear.gain(at: 0.5).isApproximatelyEqual(to: 0.5, absoluteTolerance: 0.0001))
     }
 
     @Test func gainAtMidpointDefaultIsConcave() {
         // Default (concave) curve: gain at midpoint is well below 0.5
-        let mid = AudioTaper.default.gainAt(t: 0.5)
+        let mid = AudioTaper.default.gain(at: 0.5)
         #expect(mid < 0.5)
         #expect(mid.isApproximatelyEqual(to: 0.152, absoluteTolerance: 0.001))
     }
 
     @Test func gainAtMidpointReverseAudioIsConvex() {
         // ReverseAudio (convex) curve: gain at midpoint is well above 0.5
-        let mid = AudioTaper.reverseAudio.gainAt(t: 0.5)
+        let mid = AudioTaper.reverseAudio.gain(at: 0.5)
         #expect(mid > 0.5)
         #expect(mid.isApproximatelyEqual(to: 0.820, absoluteTolerance: 0.001))
     }
@@ -104,36 +104,36 @@ struct AudioTaperTests {
         for taper in AudioTaper.presets {
             var prev = 0.0
             for i in 1 ... 20 {
-                let gain = taper.gainAt(t: Double(i) / 20.0)
+                let gain = taper.gain(at: Double(i) / 20.0)
                 #expect(gain >= prev)
                 prev = gain
             }
         }
     }
 
-    // MARK: - fadeOutGainAt
+    // MARK: - fadeOutGain(at:)
 
     @Test func fadeOutGainAtBoundaries() {
         for taper in AudioTaper.presets {
-            #expect(taper.fadeOutGainAt(s: 0).isApproximatelyEqual(to: 1, absoluteTolerance: 0.0001))
-            #expect(taper.fadeOutGainAt(s: 1).isApproximatelyEqual(to: 0, absoluteTolerance: 0.0001))
+            #expect(taper.fadeOutGain(at: 0).isApproximatelyEqual(to: 1, absoluteTolerance: 0.0001))
+            #expect(taper.fadeOutGain(at: 1).isApproximatelyEqual(to: 0, absoluteTolerance: 0.0001))
         }
     }
 
     @Test func fadeOutGainAtMidpointLinear() {
-        #expect(AudioTaper.linear.fadeOutGainAt(s: 0.5).isApproximatelyEqual(to: 0.5, absoluteTolerance: 0.0001))
+        #expect(AudioTaper.linear.fadeOutGain(at: 0.5).isApproximatelyEqual(to: 0.5, absoluteTolerance: 0.0001))
     }
 
     @Test func fadeOutGainAtMidpointDefault() {
         // Default taper fade-out drops quickly then levels off; midpoint is well below 0.5
-        let mid = AudioTaper.default.fadeOutGainAt(s: 0.5)
+        let mid = AudioTaper.default.fadeOutGain(at: 0.5)
         #expect(mid < 0.5)
         #expect(mid.isApproximatelyEqual(to: 0.179, absoluteTolerance: 0.001))
     }
 
     @Test func fadeOutGainAtMidpointReverseAudio() {
         // ReverseAudio taper fade-out holds high then drops; midpoint is well above 0.5
-        let mid = AudioTaper.reverseAudio.fadeOutGainAt(s: 0.5)
+        let mid = AudioTaper.reverseAudio.fadeOutGain(at: 0.5)
         #expect(mid > 0.5)
         #expect(mid.isApproximatelyEqual(to: 0.848, absoluteTolerance: 0.001))
     }
@@ -142,7 +142,7 @@ struct AudioTaperTests {
         for taper in AudioTaper.presets {
             var prev = 1.0
             for i in 1 ... 20 {
-                let gain = taper.fadeOutGainAt(s: Double(i) / 20.0)
+                let gain = taper.fadeOutGain(at: Double(i) / 20.0)
                 #expect(gain <= prev)
                 prev = gain
             }

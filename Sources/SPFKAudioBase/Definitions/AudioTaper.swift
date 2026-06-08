@@ -75,8 +75,8 @@ extension AudioTaper {
 
 extension AudioTaper {
     /// Gain value at normalized position `t` ∈ [0, 1] using the blend formula.
-    /// Matches the evaluation used in `RegionFadeDescription.gainAt(playbackOffset:)`.
-    public func gainAt(t: Double) -> Double {
+    /// Matches the evaluation used in `RegionFadeDescription.gainAt(playbackOffset:)` fade-in zone.
+    public func gain(at t: Double) -> Double {
         let taper1 = pow(t, Double(value))
         let taper2 = 1.0 - pow(1.0 - t, Double(inverseValue))
         let result = taper1 * Double(1 - skew) + taper2 * Double(skew)
@@ -84,9 +84,9 @@ extension AudioTaper {
     }
 
     /// Gain value at normalized fade-out position `s` ∈ [0, 1] (0 = fade start, 1 = silence).
-    /// Mirror of ``gainAt(t:)`` for the descending ramp: uses the inverse exponent for the
+    /// Mirror of ``gain(at:)`` for the descending ramp: uses the inverse exponent for the
     /// concave term and the forward exponent for the convex term.
-    public func fadeOutGainAt(s: Double) -> Double {
+    public func fadeOutGain(at s: Double) -> Double {
         let t1 = 1.0 - pow(s, Double(inverseValue))
         let t2 = pow(1.0 - s, Double(value))
         return max(0.0, min(1.0, t1 * Double(1 - skew) + t2 * Double(skew)))
@@ -101,7 +101,7 @@ extension AudioTaper {
         let path = CGMutablePath()
         for i in 0 ... steps {
             let t = Double(i) / Double(steps)
-            let gain = gainAt(t: t)
+            let gain = gain(at: t)
             let x = rect.minX + rect.width * (flipped ? (1.0 - t) : t)
             let y = flipped
                 ? rect.minY + rect.height * (1.0 - gain)
