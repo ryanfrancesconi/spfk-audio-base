@@ -58,4 +58,9 @@ public enum MetadataCopyScheme: Codable, Sendable, CaseIterable {
     public var includesImage: Bool {
         self == .copyAll
     }
+
+    /// Whether this scheme includes Finder tags (xattr color labels and custom text tags).
+    public var includesFinderTags: Bool {
+        self == .copyAll
+    }
 }
