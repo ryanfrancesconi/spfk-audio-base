@@ -100,7 +100,19 @@ public struct Bpm: Equatable, Sendable, Comparable, Hashable, Codable {
             if value < lo { return nil }
         }
 
-        return Bpm(value.rounded(.toNearestOrAwayFromZero))
+        return Bpm(value)
+    }
+
+    /// Returns a new `Bpm` rounded to `decimalPlaces` decimal places.
+    ///
+    /// Use `decimalPlaces: 0` for integer rounding, 1–3 for fractional.
+    public func rounded(to decimalPlaces: Int) -> Bpm? {
+        guard decimalPlaces > 0 else {
+            return Bpm(rawValue.rounded(.toNearestOrAwayFromZero))
+        }
+        let factor = pow(10.0, Double(decimalPlaces))
+        let rounded = (rawValue * factor).rounded(.toNearestOrAwayFromZero) / factor
+        return Bpm(rounded)
     }
 
     /// Returns whether this tempo is an octave-equivalent multiple of `rhs`.
