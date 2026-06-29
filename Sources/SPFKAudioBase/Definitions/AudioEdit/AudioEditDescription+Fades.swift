@@ -3,6 +3,27 @@
 import Foundation
 
 extension AudioEditDescription {
+    /// The effective playback duration after accounting for any pending trim.
+    /// When no trim is set, returns `fileDuration` unchanged.
+    public func effectiveDuration(fileDuration: TimeInterval) -> TimeInterval {
+        let start = trim.inPoint
+        let end = trim.outPoint > 0 ? trim.outPoint : fileDuration
+        return max(0, end - start)
+    }
+
+    /// Returns a copy with fade times proportionally clamped to fit within the effective
+    /// trimmed duration. When no trim is set the clamp is against the raw file duration.
+    /// Taper curves are preserved unchanged.
+    public func clampingFadesToTrim(fileDuration: TimeInterval) -> AudioEditDescription {
+        let duration = effectiveDuration(fileDuration: fileDuration)
+        let clamped = AudioEditDescription.clampedFades(
+            inTime: fade.inTime,
+            outTime: fade.outTime,
+            duration: duration
+        )
+        return settingFades(inTime: clamped.inTime, outTime: clamped.outTime)
+    }
+
     /// Proportionally clamps fade-in and fade-out so their sum does not exceed `duration`.
     /// When the total exceeds `duration`, both are scaled down by the same factor so each
     /// fade retains its relative proportion. Returns the original values unchanged otherwise.
