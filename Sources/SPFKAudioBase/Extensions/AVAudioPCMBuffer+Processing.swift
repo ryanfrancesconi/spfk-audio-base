@@ -55,7 +55,7 @@ extension AVAudioPCMBuffer {
 
         let length = vDSP_Length(frameLength)
         let channelCount = Int(format.channelCount)
-        var gainFactor: Float = 1 / (try peak()).amplitude
+        var gainFactor: Float = try 1 / peak().amplitude
 
         for channel in 0 ..< channelCount {
             guard let dest = normalizedBuffer.floatChannelData?[channel] else { continue }
@@ -128,7 +128,8 @@ extension AVAudioPCMBuffer {
 
         let bufferDuration = Double(length) / sampleRate
         guard inTime + outTime <= bufferDuration else {
-            throw NSError(description: "fade inTime + outTime (\(inTime + outTime)s) exceeds buffer duration (\(bufferDuration)s)")
+            let msg = "fade inTime + outTime (\(inTime + outTime)s) exceeds buffer duration (\(bufferDuration)s)"
+            throw NSError(description: msg)
         }
 
         let fadeInSamples = Int(sampleRate * inTime)
@@ -314,11 +315,18 @@ extension AVAudioPCMBuffer {
         let deClickSamples = Int(buffer.format.sampleRate * deClick)
         let canDeClick = trimmed && deClickSamples > 0 && deClickSamples * 2 <= Int(buffer.frameLength)
 
-        let fadeIn  = canDeClick ? max(edit.fade.inTime, deClick) : edit.fade.inTime
-        let fadeOut = canDeClick ? max(edit.fade.outTime, deClick) : edit.fade.outTime
+        var fadeIn = canDeClick ? max(edit.fade.inTime, deClick) : edit.fade.inTime
+        var fadeOut = canDeClick ? max(edit.fade.outTime, deClick) : edit.fade.outTime
 
         if fadeIn > 0 || fadeOut > 0 {
-            buffer = try buffer.fade(inTime: fadeIn, outTime: fadeOut, inTaper: edit.fade.inTaper, outTaper: edit.fade.outTaper)
+            // Re-clamp after de-click expansion: max() can push a small fade over the trimmed buffer duration
+            let bufferDuration = Double(buffer.frameLength) / buffer.format.sampleRate
+            let safe = AudioEditDescription.clampedFades(inTime: fadeIn, outTime: fadeOut, duration: bufferDuration)
+            fadeIn = safe.inTime
+            fadeOut = safe.outTime
+            if fadeIn > 0 || fadeOut > 0 {
+                buffer = try buffer.fade(inTime: fadeIn, outTime: fadeOut, inTaper: edit.fade.inTaper, outTaper: edit.fade.outTaper)
+            }
         }
 
         return buffer
