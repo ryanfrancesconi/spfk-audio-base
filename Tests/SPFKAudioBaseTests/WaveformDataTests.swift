@@ -59,28 +59,42 @@ class WaveformDataTests: TestCaseModel {
 }
 
 extension WaveformDataTests {
-    // took 1.8553874999997788 seconds.
     @Test func subdata_real() async throws {
-        // try await wait(sec: 5)
-
         let benchmark = Benchmark(label: "\((#file as NSString).lastPathComponent):\(#function)")
         defer { benchmark.stop() }
 
-        // let url = TestBundleResources.shared.tabla_6_channel
-        let url = URL(fileURLWithPath: "/Users/rf/Downloads/TestResources/Home Economics.wav")
+        let url = TestBundleResources.shared.tabla_6_channel
 
         Log.signpost(.begin, name: "parse")
-        let parser = WaveformDataParser(
-            resolution: .medium,
-        )
-
+        let parser = WaveformDataParser(resolution: .medium)
         let waveformData = try await parser.parse(url: url)
-        #expect(waveformData.channelCount == 2)
         Log.signpost(.end, name: "parse")
 
+        #expect(waveformData.channelCount == 6)
+
+        // All channels must have equal frame count
+        let fullCount = waveformData.floatChannelData[0].count
+        for channel in waveformData.floatChannelData {
+            #expect(channel.count == fullCount)
+        }
+
+        // Real file must contain non-trivial values
+        #expect(waveformData.floatChannelData.contains { $0.max() ?? 0 > 0 })
+
         Log.signpost(.begin, name: "subdata")
-        let subdata = try waveformData.subdata(in: 0 ... waveformData.audioDuration / 2)
-        #expect(subdata.count == 2)
+        let halfDuration = waveformData.audioDuration / 2
+        let subdata = try waveformData.subdata(in: 0 ... halfDuration)
         Log.signpost(.end, name: "subdata")
+
+        #expect(subdata.count == waveformData.channelCount)
+
+        // Frame count must match the time→index formula used by subdata(in:)
+        let expectedCount = Int(halfDuration * waveformData.samplesPerSecond)
+        for channel in subdata {
+            #expect(channel.count == expectedCount)
+        }
+
+        // Subdata from t=0 must share its opening values with the full data
+        #expect(Array(subdata[0].prefix(4)) == Array(waveformData.floatChannelData[0].prefix(4)))
     }
 }
