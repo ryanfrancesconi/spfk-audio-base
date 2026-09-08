@@ -29,6 +29,7 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable, Codable {
     case mov
     case mp3
     case mp4
+    case mxf
     case opus
     case snd
     case ts
@@ -89,7 +90,7 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable, Codable {
     /// carries exactly one stream, where listing tracks costs an asset open per imported file and
     /// can only ever name the track that would have played anyway.
     public static let multiAudioTrackTypes: [AudioFileType] = [
-        .m4a, .m4b, .m4v, .mka, .mkv, .mov, .mp4, .ts, .webm,
+        .m4a, .m4b, .m4v, .mka, .mkv, .mov, .mp4, .mxf, .ts, .webm,
     ]
 
     public var supportsMultipleAudioTracks: Bool {
@@ -136,6 +137,7 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable, Codable {
         case .mka:  "Matroska Audio"
         case .mkv:  "Matroska Video"
         case .mov:  "Apple QuickTime"
+        case .mxf:  "Material eXchange Format"
         case .webm: "WebM Video"
         case .ogg:  "Ogg Vorbis"
         case .opus: "Ogg Opus"
@@ -224,6 +226,18 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable, Codable {
         default:
             false
         }
+    }
+
+    /// Whether `AVAudioFile(forReading:)` can open this container at all.
+    ///
+    /// `AVAudioFile` is ExtAudioFile underneath — a different stack from `AVAsset` — so the answer
+    /// does not follow from whether AVFoundation can play the file. Measured `'fmt?'` failures:
+    /// the Matroska profiles, and MXF both before and after `ProVideoFormats.register()`, which
+    /// serves format readers to AVAsset and not to AudioToolbox.
+    ///
+    /// A caller needing audio out of one of these routes to an AVAsset-backed PCM source instead.
+    public var isAVAudioFileReadable: Bool {
+        !isMatroska && self != .mxf
     }
 
     /// Whether `AVAudioFile` can write this format directly (PCM and AAC containers).
