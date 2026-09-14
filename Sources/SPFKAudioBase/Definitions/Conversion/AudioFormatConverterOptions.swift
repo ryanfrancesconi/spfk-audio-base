@@ -2,6 +2,7 @@
 
 import AVFoundation
 import SPFKBase
+import SPFKFileSystem
 
 /// Options controlling an audio format conversion.
 ///
