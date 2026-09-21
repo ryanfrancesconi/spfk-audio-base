@@ -67,8 +67,6 @@ same thing. It is cleared once the edit has been rendered and written.
 |------|-------------|
 | **`AudioFormatConverterOptions`** | Format, sample rate, bit depth and bit rate for a conversion. Any property left `nil` adopts the input file's value; `bitRate` states a stereo rate, halved for mono |
 | **`BitDepthRule`** | Whether the converter may go above the source's bit depth |
-| **`AudioEditHandling`** | What happens to pending edits during an export |
-| **`FileConflictScheme`** | What to do when the destination exists |
 | **`MetadataCopyScheme`** | Which metadata categories travel with a conversion |
 | **`PasteAttributesOptions`** | Which sections and which individual fields a Paste Attributes transfers |
 
@@ -122,6 +120,7 @@ with which saved state — so a workspace reopens with the chain it had.
 | Package | Purpose |
 |---------|---------|
 | [spfk-base](https://github.com/ryanfrancesconi/spfk-base) | Core utilities, logging, type extensions |
+| [spfk-filesystem](https://github.com/ryanfrancesconi/spfk-filesystem) | `FileConflictScheme`, stored in `AudioFormatConverterOptions` |
 | [spfk-testing](https://github.com/ryanfrancesconi/spfk-testing) | Test audio resources (test target only) |
 
 ## About
