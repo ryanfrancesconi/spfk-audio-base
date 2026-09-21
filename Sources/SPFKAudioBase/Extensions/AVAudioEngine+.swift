@@ -100,7 +100,7 @@ extension AVAudioEngine {
 }
 
 /// A typed node so we can detect and manage if it leaks
-class MixerInitializationNode: AVAudioUnitSampler {
+class MixerInitializationNode: AVAudioUnitSampler, @unchecked Sendable {
     deinit {
         Log.debug("- { \(self) }")
     }
