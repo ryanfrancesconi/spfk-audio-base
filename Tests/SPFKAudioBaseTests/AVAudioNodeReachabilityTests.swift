@@ -79,7 +79,7 @@ final class AVAudioNodeReachabilityTests {
     }
 }
 
-private final class StubConnectionEngine: AVAudioEngine {
+private final class StubConnectionEngine: AVAudioEngine, @unchecked Sendable {
     var links: [ObjectIdentifier: [AVAudioNode]] = [:]
 
     override func outputConnectionPoints(for node: AVAudioNode, outputBus bus: AVAudioNodeBus) -> [AVAudioConnectionPoint] {
