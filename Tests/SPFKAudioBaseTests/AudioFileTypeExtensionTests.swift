@@ -29,6 +29,14 @@ struct AudioFileTypeExtensionTests {
         #expect(AudioFileType(pathExtension: "bwf") == .wav)
     }
 
+    /// Every case parses back from its own extension, and every one names a UTType.
+    @Test func everyCaseRoundTripsThroughItsExtension() throws {
+        for type in AudioFileType.allCases {
+            let parsed = try #require(AudioFileType(pathExtension: type.pathExtension), "\(type)")
+            #expect(parsed.utType != nil, "\(type)")
+        }
+    }
+
     @Test("init returns nil for unknown extensions")
     func initUnknown() {
         #expect(AudioFileType(pathExtension: "xyz") == nil)
