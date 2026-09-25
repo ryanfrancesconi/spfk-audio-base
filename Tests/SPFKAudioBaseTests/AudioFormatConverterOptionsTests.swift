@@ -1,10 +1,13 @@
 // Copyright Ryan Francesconi. All Rights Reserved.
 
+import AVFoundation
 import Foundation
+import SPFKTesting
 import Testing
 
 @testable import SPFKAudioBase
 
+@Suite(.tags(.file))
 struct AudioFormatConverterOptionsTests {
     // MARK: - Static Ranges
 
@@ -195,5 +198,102 @@ struct AudioFormatConverterOptionsTests {
         #expect(options.channels == nil)
         #expect(options.isInterleaved == nil)
         #expect(options.conflictScheme == .overwrite)
+    }
+
+    // MARK: - Format acceptance
+
+    @Test func formatAcceptsSupportedTypes() {
+        let supported: [AudioFileType] = [.wav, .aiff, .caf, .m4a, .mp3]
+        for type in supported {
+            var options = AudioFormatConverterOptions()
+            options.format = type
+            #expect(options.format == type)
+        }
+    }
+
+    // MARK: - init(url:), init(audioFile:)
+
+    @Test func initFromURL() {
+        let url = TestBundleResources.shared.tabla_wav
+        let options = AudioFormatConverterOptions(url: url)
+        #expect(options != nil)
+        #expect(options?.format == .wav)
+        #expect(options?.sampleRate != nil)
+        #expect(options?.bitsPerChannel != nil)
+        #expect(options?.channels != nil)
+    }
+
+    /// `.aif` and `.wave` are spellings of a case rather than cases of their own, so the format
+    /// has to come from ``AudioFileType/init(pathExtension:)``.
+    @Test func initFromURLMapsAlternateExtension() {
+        let options = AudioFormatConverterOptions(url: TestBundleResources.shared.tabla_aif)
+        #expect(options?.format == .aiff)
+    }
+
+    @Test func initFromURLReturnsNilForInvalidURL() {
+        let url = URL(fileURLWithPath: "/nonexistent/file.wav")
+        let options = AudioFormatConverterOptions(url: url)
+        #expect(options == nil)
+    }
+
+    @Test func initFromAudioFile() throws {
+        let url = TestBundleResources.shared.tabla_wav
+        let audioFile = try AVAudioFile(forReading: url)
+        let options = AudioFormatConverterOptions(audioFile: audioFile)
+
+        #expect(options != nil)
+        #expect(options?.format == .wav)
+        #expect(options?.sampleRate ?? 0 > 0)
+        #expect(options?.channels ?? 0 > 0)
+    }
+
+    // MARK: - init(format:)
+
+    @Test func initWithFormatSetsFormatOnly() {
+        let options = AudioFormatConverterOptions(format: .m4a)
+        #expect(options.format == .m4a)
+        #expect(options.sampleRate == nil)
+        #expect(options.bitsPerChannel == nil)
+        #expect(options.channels == nil)
+        #expect(options.bitDepthRule == .any)
+    }
+
+    // MARK: - Serializable
+
+    @Test func serializableRoundTrip() throws {
+        var original = AudioFormatConverterOptions()
+        original.format = .wav
+        original.sampleRate = 48000
+        original.bitsPerChannel = 24
+        original.channels = 2
+        original.bitRate = 128_000
+        original.bitDepthRule = .lessThanOrEqual
+        original.conflictScheme = .error
+
+        let data = try #require(original.dataRepresentation)
+        let decoded = try AudioFormatConverterOptions(data: data)
+
+        #expect(decoded.format == .wav)
+        #expect(decoded.sampleRate == 48000)
+        #expect(decoded.bitsPerChannel == 24)
+        #expect(decoded.channels == 2)
+        #expect(decoded.bitRate == 128_000)
+        #expect(decoded.bitDepthRule == .lessThanOrEqual)
+        #expect(decoded.conflictScheme == .error)
+    }
+
+    @Test func serializableRoundTripWithNilValues() throws {
+        let original = AudioFormatConverterOptions()
+
+        let data = try #require(original.dataRepresentation)
+        let decoded = try AudioFormatConverterOptions(data: data)
+
+        #expect(decoded.format == nil)
+        #expect(decoded.sampleRate == nil)
+        #expect(decoded.bitsPerChannel == nil)
+        #expect(decoded.channels == nil)
+        #expect(decoded.bitRate == 256_000)
+        #expect(decoded.bitDepthRule == .any)
+        #expect(decoded.conflictScheme == .overwrite)
     }
 }
