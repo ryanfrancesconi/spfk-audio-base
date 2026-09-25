@@ -19,13 +19,7 @@ extension AVAudioFormat {
     }
 
     public var channelCountReadableDescription: String {
-        var out = "Stereo"
-        if channelCount == 1 {
-            out = "Mono"
-        } else if channelCount > 2 {
-            out = "\(channelCount) Channel"
-        }
-        return out
+        AudioTerminology.channels(Int(channelCount))
     }
 
     public var readableDescription: String {

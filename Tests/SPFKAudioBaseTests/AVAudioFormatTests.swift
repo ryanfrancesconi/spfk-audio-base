@@ -20,7 +20,7 @@ struct AVAudioFormatTests {
     func multichannelDescription() {
         guard let layout = AVAudioChannelLayout(layoutTag: kAudioChannelLayoutTag_MPEG_5_1_A) else { return }
         let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channelLayout: layout)
-        #expect(format.channelCountReadableDescription == "6 Channel")
+        #expect(format.channelCountReadableDescription == "6 Channels")
     }
 
     @Test("readableDescription includes sample rate and channel info")
