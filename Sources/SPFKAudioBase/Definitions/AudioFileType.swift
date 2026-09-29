@@ -49,6 +49,7 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable, Codable {
     /// AVFoundation cannot open either — that limits playback and thumbnails, not metadata.
     public static let metadataTypes: [AudioFileType] = [
         .aac,
+        .aifc,
         .aiff,
         .m4a,
         .m4b,
@@ -67,6 +68,27 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable, Codable {
 
     public var supportsMetadata: Bool {
         Self.metadataTypes.contains(self)
+    }
+
+    /// File types whose markers `MetaAudioFileDescription.save(dirtyFlags:)` can write. Each entry is
+    /// verified by a round trip; add a type only once one passes.
+    public static let markerWriteTypes: [AudioFileType] = [
+        .aifc,
+        .aiff,
+        .flac,
+        .m4a,
+        .m4b,
+        .m4v,
+        .mov,
+        .mp3,
+        .mp4,
+        .ogg,
+        .opus,
+        .wav,
+    ]
+
+    public var supportsMarkerWrite: Bool {
+        Self.markerWriteTypes.contains(self)
     }
 
     /// Matroska-family containers. WebM is a Matroska profile, so one parser covers both and
@@ -100,22 +122,21 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable, Codable {
     /// File types with reliable XMP support via the Adobe XMP SDK smart handler.
     /// Formats not listed here either lack a smart handler or have no standard XMP embedding.
     public static let xmpTypes: [AudioFileType] = [
-        .aiff, .aifc, .m4a, .m4b, .m4v, .mov, .mp3, .mp4, .wav, .w64,
+        .aiff, .aifc, .m4a, .m4b, .m4v, .mov, .mp3, .mp4, .wav,
     ]
 
     public var supportsXMP: Bool {
         Self.xmpTypes.contains(self)
     }
 
-    /// RIFF-based formats that support native chunk metadata (BEXT and iXML).
-    public static let riffTypes: [AudioFileType] = [.wav, .w64]
+    /// RIFF-based formats that support native chunk metadata (BEXT and iXML). Wave64 is RIFF-like
+    /// but has no writer: TagLib does not open it.
+    public static let riffTypes: [AudioFileType] = [.wav]
 
-    /// Whether this format supports BEXT metadata chunks.
-    /// Includes RIFF-based formats (WAV, AIFF) and FLAC (via APPLICATION blocks).
+    /// Whether this format supports BEXT metadata chunks: WAV, and FLAC via APPLICATION blocks.
     public var supportsBEXT: Bool { Self.riffTypes.contains(self) || self == .flac }
 
-    /// Whether this format supports iXML metadata chunks.
-    /// Includes RIFF-based formats (WAV, AIFF) and FLAC (via APPLICATION blocks).
+    /// Whether this format supports iXML metadata chunks: WAV, and FLAC via APPLICATION blocks.
     public var supportsIXML: Bool { Self.riffTypes.contains(self) || self == .flac }
 
     public var stringValue: String {
