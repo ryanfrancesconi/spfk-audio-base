@@ -77,7 +77,6 @@ extension AVAudioMixerNode {
     /// Make a connection without breaking other connections.
     public func connectMixer(input: AVAudioNode, format: AVAudioFormat? = nil) {
         guard let engine else {
-            // Log.error("Engine is nil")
             return
         }
 

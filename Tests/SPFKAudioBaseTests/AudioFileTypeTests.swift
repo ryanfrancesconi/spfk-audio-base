@@ -54,8 +54,5 @@ class AudioFileTypeTests: BinTestCase {
         #expect(!AudioFileType.wav.isVideo)
         #expect(AudioFileType.wav.isAudio)
         #expect(AudioFileType.wav.isPCM)
-
-        // it could be but this returns false
-        // #expect(AudioFileType.mp4.isPCM)
     }
 }
