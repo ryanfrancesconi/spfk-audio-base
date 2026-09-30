@@ -93,15 +93,9 @@ extension AVAudioEngine {
         safeAttach(nodes: [dummy])
         connect(dummy, to: mixer, format: format)
 
-        Log.debug("* Added reset node \(dummy) to mixer with format \(format)")
-
         return dummy
     }
 }
 
 /// A typed node so we can detect and manage if it leaks
-class MixerInitializationNode: AVAudioUnitSampler, @unchecked Sendable {
-    deinit {
-        Log.debug("- { \(self) }")
-    }
-}
+class MixerInitializationNode: AVAudioUnitSampler, @unchecked Sendable {}

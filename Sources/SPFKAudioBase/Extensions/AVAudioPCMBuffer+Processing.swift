@@ -187,8 +187,6 @@ extension AVAudioPCMBuffer {
             throw NSError(description: "Failed to create buffer with format \(convertToFormat.readableDescription)")
         }
 
-        Log.debug("Creating buffer with format", convertToFormat, "frameCapacity", newFrameCapacity)
-
         var error: NSError?
         let status: AVAudioConverterOutputStatus = converter.convert(
             to: outBuffer,

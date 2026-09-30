@@ -42,8 +42,6 @@ class AudioFileTypeTests: BinTestCase {
         }
 
         #expect(names.count == ids.count)
-
-        Log.debug(names)
     }
 
     @Test func videoTypes() throws {
