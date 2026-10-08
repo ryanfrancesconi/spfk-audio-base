@@ -70,22 +70,11 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable, Codable {
         Self.metadataTypes.contains(self)
     }
 
-    /// File types whose markers `MetaAudioFileDescription.save(dirtyFlags:)` can write. Each entry is
-    /// verified by a round trip; add a type only once one passes.
-    public static let markerWriteTypes: [AudioFileType] = [
-        .aifc,
-        .aiff,
-        .flac,
-        .m4a,
-        .m4b,
-        .m4v,
-        .mov,
-        .mp3,
-        .mp4,
-        .ogg,
-        .opus,
-        .wav,
-    ]
+    /// File types whose markers `MetaAudioFileDescription.save(dirtyFlags:)` can write: every
+    /// ``markerStorage`` but Core Audio's. Each is verified by a round trip.
+    public static let markerWriteTypes: [AudioFileType] = allCases.filter {
+        $0.markerStorage.map { $0 != .coreAudio } ?? false
+    }
 
     public var supportsMarkerWrite: Bool {
         Self.markerWriteTypes.contains(self)
