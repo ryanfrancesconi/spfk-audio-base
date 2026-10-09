@@ -26,12 +26,19 @@ Shared audio types, AVFoundation extensions and processing utilities for the SPF
 | **`AudioTaper`** | The shape of a fade or gain ramp |
 | **`RealTimeDomain`** | Time display strings, and parsing them back |
 | **`AudioDefaults`** | The system audio format, as an actor |
+| **`AudioTerminology`** | One spelling for each audio quantity — sample rate, bit depth, bit rate, channel count — localized where it is a word |
 
 ### AudioFileType capability
 
 Capability is answered per question rather than by one "supported" flag, because the answers
 genuinely differ by format — `supportsMetadata`, `supportsXMP`, `supportsBEXT`, `supportsIXML`,
-`isAVAudioFileWritable`, `isMatroska`.
+`supportsMarkerWrite`, `markerStorage`, `isAVAudioFileWritable`, `isMatroska`.
+
+**`markerStorage` names where each container keeps markers** (`MarkerStorage`): RIFF `cue `/`adtl`,
+AIFF `MARK`, ID3v2 `CHAP`, a QuickTime chapter track, or Vorbis `CHAPTERnnn`, and `nil` where there
+is nowhere to (ADTS `.aac`, Matroska, MXF, `.caf`, `.au`, `.ts`). Every marker read and write
+dispatches on it. `markerWriteTypes` is every format with a `markerStorage` except Core Audio's
+(`.w64`), which a metadata save does not write.
 
 **`isMatroska` covers `.mka`, `.mkv` and `.webm`** (WebM is a Matroska profile, so one parser
 serves all three). These are the formats absent from `AVURLAsset.audiovisualTypes()`, where
@@ -110,6 +117,7 @@ with which saved state — so a workspace reopens with the chain it had.
 | **`AVAudioPCMBuffer`** | Duration, RMS, silence check; normalize, reverse, fade, convert and peak; extract a range, loop, append and write |
 | **`AVAudioFile`** | Duration, estimated and accurate data rate, conversion to a buffer (whole or capped) or to float channel data |
 | **`AVAudioFormat`** | A readable description, bits per channel, bit rate, and PCM format construction |
+| **`AudioStreamBasicDescription`** | Source bit depth, including FLAC and Apple Lossless, which state it in the format flags |
 | **`AVAudioEngine`** | Output format, max frames per slice, and safe attach/detach/connect |
 | **`AVAudioNode`** | A resolved name, output-connection check, an ASCII connection diagram, and disconnecting inputs and outputs |
 | **`AudioComponentDescription`** | Identity and a stable UID for an audio unit |
