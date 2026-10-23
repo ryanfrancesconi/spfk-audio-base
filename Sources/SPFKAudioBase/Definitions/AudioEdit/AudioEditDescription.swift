@@ -10,12 +10,17 @@ import SPFKBase
 /// Stored on PlaylistElement and persisted to JSON so edits survive app restarts.
 /// Cleared to nil after the edit is rendered and written to disk.
 ///
-/// Operations are applied in pipeline order: trim → normalize → fade.
+/// Operations are applied in pipeline order: trim → channels → normalize → fade.
 public struct AudioEditDescription: Equatable, Sendable {
     // MARK: - Trim
 
     /// In/out trim window settings.
     public var trim: TrimDescription = TrimDescription()
+
+    // MARK: - Channels
+
+    /// A stereo channel operation, applied after the trim.
+    public var channels: ChannelOperation = .none
 
     // MARK: - Normalize
 
@@ -31,15 +36,23 @@ public struct AudioEditDescription: Equatable, Sendable {
 
     /// True when no edit operations are set — the description is a no-op.
     public var isEmpty: Bool {
-        trim.isEmpty && normalize.isEmpty && fade.isEmpty
+        trim.isEmpty && channels == .none && normalize.isEmpty && fade.isEmpty
+    }
+
+    /// True when a render of this edit can exceed 0 dBFS from something other than a normalize the
+    /// user measured, so the renderer must bring it under the ceiling.
+    public var needsCeiling: Bool {
+        channels != .none
     }
 
     public init(
         trim: TrimDescription = TrimDescription(),
+        channels: ChannelOperation = .none,
         normalize: NormalizeDescription = NormalizeDescription(),
         fade: FadeDescription = FadeDescription()
     ) {
         self.trim = trim
+        self.channels = channels
         self.normalize = normalize
         self.fade = fade
     }
@@ -49,12 +62,13 @@ public struct AudioEditDescription: Equatable, Sendable {
 
 extension AudioEditDescription: Codable {
     private enum CodingKeys: String, CodingKey {
-        case trim, normalize, fade
+        case trim, channels, normalize, fade
     }
 
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         trim = try c.decodeIfPresent(TrimDescription.self, forKey: .trim) ?? TrimDescription()
+        channels = try c.decodeIfPresent(ChannelOperation.self, forKey: .channels) ?? .none
         normalize = try c.decodeIfPresent(NormalizeDescription.self, forKey: .normalize) ?? NormalizeDescription()
         fade = try c.decodeIfPresent(FadeDescription.self, forKey: .fade) ?? FadeDescription()
     }

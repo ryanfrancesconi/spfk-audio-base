@@ -19,7 +19,7 @@ extension AVAudioPCMBuffer {
             .applyingOutputStages(edit)
     }
 
-    /// The stages that select what is rendered: trim.
+    /// The stages that select what is rendered: trim, then channels.
     public func applyingSourceStages(_ edit: AudioEditDescription, isPreTrimmed: Bool = false) throws -> AVAudioPCMBuffer {
         var buffer = self
 
@@ -29,7 +29,7 @@ extension AVAudioPCMBuffer {
             buffer = try buffer.extract(from: start, to: end)
         }
 
-        return buffer
+        return try buffer.applyingChannelOperation(edit.channels)
     }
 
     /// The stages that shape the rendered signal: normalize gain, then fades.
