@@ -282,58 +282,6 @@ extension AVAudioPCMBuffer {
         return output
     }
 
-    /// Apply an `AudioEditDescription` to this buffer, returning a new processed buffer.
-    ///
-    /// Operations are applied in pipeline order: trim → normalize → fade.
-    /// Returns `self` unchanged when `edit.isEmpty` is true.
-    /// - Parameter isPreTrimmed: the buffer already holds exactly `edit.trim`'s window, so the
-    ///   extract is skipped while the boundaries still get their de-click. For a caller that read
-    ///   only the window from disk rather than the whole file.
-    public func applying(_ edit: AudioEditDescription, isPreTrimmed: Bool = false) throws -> AVAudioPCMBuffer {
-        guard !edit.isEmpty else { return self }
-
-        // 5 ms de-click applied at trim boundaries to prevent pops from non-zero-crossing cuts.
-        let deClick: TimeInterval = 0.005
-
-        var buffer = self
-        var trimmed = false
-
-        if !edit.trim.isEmpty {
-            if !isPreTrimmed {
-                let start = edit.trim.inPoint
-                let end = edit.trim.outPoint > 0 ? edit.trim.outPoint : Double(buffer.frameLength) / buffer.format.sampleRate
-                buffer = try buffer.extract(from: start, to: end)
-            }
-
-            trimmed = true
-        }
-
-        if !edit.normalize.isEmpty {
-            buffer = try buffer.gain(edit.normalize.gain)
-        }
-
-        // Only apply de-click when the trimmed buffer is long enough for non-overlapping fades.
-        // Skipping it for very short buffers prevents the fade guard from throwing.
-        let deClickSamples = Int(buffer.format.sampleRate * deClick)
-        let canDeClick = trimmed && deClickSamples > 0 && deClickSamples * 2 <= Int(buffer.frameLength)
-
-        var fadeIn = canDeClick ? max(edit.fade.inTime, deClick) : edit.fade.inTime
-        var fadeOut = canDeClick ? max(edit.fade.outTime, deClick) : edit.fade.outTime
-
-        if fadeIn > 0 || fadeOut > 0 {
-            // Re-clamp after de-click expansion: max() can push a small fade over the trimmed buffer duration
-            let bufferDuration = Double(buffer.frameLength) / buffer.format.sampleRate
-            let safe = AudioEditDescription.clampedFades(inTime: fadeIn, outTime: fadeOut, duration: bufferDuration)
-            fadeIn = safe.inTime
-            fadeOut = safe.outTime
-            if fadeIn > 0 || fadeOut > 0 {
-                buffer = try buffer.fade(inTime: fadeIn, outTime: fadeOut, inTaper: edit.fade.inTaper, outTaper: edit.fade.outTaper)
-            }
-        }
-
-        return buffer
-    }
-
     /// Copy the contents of this buffer into a new buffer `numberOfDuplicates` amounts
     public func loop(numberOfDuplicates: Int) throws -> AVAudioPCMBuffer {
         guard
