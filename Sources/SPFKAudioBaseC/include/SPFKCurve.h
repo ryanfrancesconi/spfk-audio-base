@@ -59,6 +59,12 @@ static inline double spfk_curve_segment_value(const SPFKCurveSegment *segment, d
     return segment->startValue + (segment->endValue - segment->startValue) * spfk_curve_shape_value(segment, x);
 }
 
+/// The value the segment opens on, whatever its length; a curve holds it before its first segment.
+static inline double spfk_curve_segment_start_value(const SPFKCurveSegment *segment) {
+    return segment->startValue +
+           (segment->endValue - segment->startValue) * spfk_curve_shape_value(segment, segment->shapeStart);
+}
+
 /// The index of the last segment starting at or before `position`, or -1 when none does.
 /// `segments` are ordered and do not overlap.
 static inline long spfk_curve_find(const SPFKCurveSegment *segments, long count, double position) {
@@ -82,7 +88,7 @@ static inline double spfk_curve_value(const SPFKCurveSegment *segments, long cou
     if (count <= 0) return 0.0;
 
     long index = spfk_curve_find(segments, count, position);
-    if (index < 0) return spfk_curve_segment_value(&segments[0], segments[0].start);
+    if (index < 0) return spfk_curve_segment_start_value(&segments[0]);
 
     return spfk_curve_segment_value(&segments[index], position);
 }

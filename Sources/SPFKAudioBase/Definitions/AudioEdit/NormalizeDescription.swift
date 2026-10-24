@@ -5,8 +5,8 @@ import Foundation
 
 /// Describes the result of a normalization analysis pass.
 ///
-/// Stored on `PlaylistElement.audioEditDescription.normalize` and applied
-/// via `RegionFadeDescription.maximumGain` during real-time playback.
+/// Stored on `PlaylistElement.audioEditDescription.normalize` and applied as the transport's
+/// channel gain during real-time playback.
 /// The `gain` field is the only value needed at playback time; measurement
 /// fields are stored for display purposes (e.g. playlist columns).
 /// Measurement fields are `nil` when the analysis mode didn't produce them.
@@ -23,9 +23,8 @@ public struct NormalizeDescription: Equatable, Sendable {
     /// was run in LUFS mode or has not been performed.
     public var measuredPeakdBFS: Float? = nil
 
-    /// Computed linear gain multiplier — the result of the gain clamp calculation.
-    /// Handed to `RegionFadeDescription.maximumGain` so fade curves ramp to the
-    /// normalized level, and set directly on the channel gain when no fade is active.
+    /// Computed linear gain multiplier — the result of the gain clamp calculation. Playback sets it
+    /// as the channel gain's own value, which the fade curve multiplies.
     public var gain: AUValue = 1
 
     /// True when gain is effectively unity — no normalization stored or needed.

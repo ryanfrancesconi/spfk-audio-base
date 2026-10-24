@@ -99,6 +99,15 @@ struct ParameterCurveTests {
         #expect(abs(curve.value(at: 1.5) - 0.5) < 1e-6)
     }
 
+    /// A step as the first segment holds its start value before it, as any first segment does.
+    @Test func zeroLengthFirstSegmentHoldsItsStartBeforeIt() throws {
+        let curve = try ParameterCurve([segment(0.5, 0.5, 1, 0)])
+
+        #expect(curve.value(at: 0) == 1)
+        #expect(curve.value(at: 0.4999) == 1)
+        #expect(curve.value(at: 0.5) == 0)
+    }
+
     @Test func constantHoldsEverywhere() throws {
         let curve = try ParameterCurve(constant: 0.7)
         for position in [-1e9, 0, 1, 1e9] {
