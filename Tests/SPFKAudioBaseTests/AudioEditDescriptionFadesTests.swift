@@ -183,4 +183,33 @@ struct AudioEditDescriptionFadesTests {
         let result = original.clearingFades()
         #expect(result.isEmpty)
     }
+
+    // MARK: - applyingSelectionFades
+
+    /// A fade-in drawn into an existing fade-out keeps its length; the fade-out gives way.
+    @Test func selectedFadeInKeepsItsLengthOverAnExistingFadeOut() throws {
+        let original = AudioEditDescription(fade: FadeDescription(outTime: 2))
+        let result = try #require(original.applyingSelectionFades(selectionStart: 0, selectionEnd: 3, fileDuration: 4))
+        #expect(result.fade.inTime == 3)
+        #expect(result.fade.outTime == 1)
+    }
+
+    @Test func selectedFadeOutKeepsItsLengthOverAnExistingFadeIn() throws {
+        let original = AudioEditDescription(fade: FadeDescription(inTime: 3))
+        let result = try #require(original.applyingSelectionFades(selectionStart: 2, selectionEnd: 4, fileDuration: 4))
+        #expect(result.fade.outTime == 2)
+        #expect(result.fade.inTime == 2)
+    }
+
+    @Test func selectionWithinTheTrimSetsTheFadeAgainstIt() throws {
+        let original = AudioEditDescription(trim: TrimDescription(inPoint: 1, outPoint: 5), fade: FadeDescription(outTime: 1))
+        let result = try #require(original.applyingSelectionFades(selectionStart: 1, selectionEnd: 3, fileDuration: 10))
+        #expect(result.fade.inTime == 2)
+        #expect(result.fade.outTime == 1)
+    }
+
+    @Test func interiorSelectionSetsNoFade() {
+        let original = AudioEditDescription(fade: FadeDescription(inTime: 1))
+        #expect(original.applyingSelectionFades(selectionStart: 1, selectionEnd: 2, fileDuration: 4) == nil)
+    }
 }

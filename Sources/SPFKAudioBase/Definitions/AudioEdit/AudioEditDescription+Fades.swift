@@ -56,6 +56,32 @@ extension AudioEditDescription {
         settingFades(inTime: 0, outTime: 0)
     }
 
+    /// A copy with the fade a waveform selection describes, or nil for a selection touching neither
+    /// end of the trim region (see ``selectionFades(selectionStart:selectionEnd:duration:trim:tolerance:)``).
+    ///
+    /// Where the fade it sets would overlap the other, the one the selection set keeps its length,
+    /// as the fade editor does when one handle moves; a selection setting both favors the fade-out.
+    public func applyingSelectionFades(
+        selectionStart: TimeInterval,
+        selectionEnd: TimeInterval,
+        fileDuration: TimeInterval
+    ) -> AudioEditDescription? {
+        guard let fades = Self.selectionFades(
+            selectionStart: selectionStart,
+            selectionEnd: selectionEnd,
+            duration: fileDuration,
+            trim: trim
+        ) else { return nil }
+
+        var copy = self
+        if fades.inTime > 0 { copy.fade.inTime = fades.inTime }
+        if fades.outTime > 0 { copy.fade.outTime = fades.outTime }
+
+        let priority: FadeDescription.Priority = fades.outTime > 0 ? .fadeOut : .fadeIn
+        copy.fade = copy.fade.clamped(toRegion: effectiveDuration(fileDuration: fileDuration), favoring: priority)
+        return copy
+    }
+
     /// Returns fade durations derived from a waveform selection, respecting any trim region.
     ///
     /// The fade-in applies when the selection starts at or before the trim start (inPoint, or
