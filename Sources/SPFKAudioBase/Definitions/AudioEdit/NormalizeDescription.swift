@@ -25,7 +25,7 @@ public struct NormalizeDescription: Equatable, Sendable {
 
     /// Computed linear gain multiplier — the result of the gain clamp calculation.
     /// Handed to `RegionFadeDescription.maximumGain` so fade curves ramp to the
-    /// normalized level, and set directly on the fader when no fade is active.
+    /// normalized level, and set directly on the channel gain when no fade is active.
     public var gain: AUValue = 1
 
     /// True when gain is effectively unity — no normalization stored or needed.

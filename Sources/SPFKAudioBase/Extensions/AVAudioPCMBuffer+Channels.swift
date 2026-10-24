@@ -54,7 +54,7 @@ extension AVAudioPCMBuffer {
             dest[0].update(from: right, count: count)
 
         case let .midSideDecode(width):
-            // Element-wise rather than vDSP_vsma, so the rounding matches FaderDSP's `m + w * s`.
+            // Element-wise rather than vDSP_vsma, so the rounding matches ChannelGainDSP's `m + w * s`.
             for i in 0 ..< count {
                 let side = width * right[i]
                 dest[0][i] = left[i] + side
