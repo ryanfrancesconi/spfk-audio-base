@@ -21,7 +21,7 @@ Shared audio types, AVFoundation extensions and processing utilities for the SPF
 | **`Bpm`** | A tempo in beats per minute, with octave-equivalent matching and a tolerance |
 | **`LoudnessDescription`** | EBU R128 metrics — integrated, range, true peak, max momentary and short-term — with averaging across files |
 | **`NoteName`** / **`MusicalTonality`** | Chromatic note names with enharmonics, and major/minor |
-| **`MusicalKeyValue`** | A key as a note name and tonality, with its relative key |
+| **`MusicalKeyValue`** | A key as a note name and tonality, with its relative key and transposition. Reads and writes the standard ("C# Minor"), short ("C#m"), Camelot ("8A") and Open Key ("1m") notations, and a key leading a comment |
 | **`CountableResult`** | Consensus voting for iterative analysis, with early exit once a value reaches the required number of matches |
 | **`BufferPeak`** | A peak measurement over a buffer |
 | **`AudioTaper`** | The shape of a fade or gain ramp |
