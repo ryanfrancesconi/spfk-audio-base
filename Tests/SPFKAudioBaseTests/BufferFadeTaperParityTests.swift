@@ -37,8 +37,8 @@ struct BufferFadeTaperParityTests {
         let out = try #require(faded.floatChannelData)
 
         for i in stride(from: 0, to: fadeSamples, by: 97) {
-            // fade() evaluates at (i + 1) / fadeSamples so the region's last sample reaches unity
-            let t = Double(i + 1) / Double(fadeSamples)
+            // frame i is evaluated at i / sampleRate, as playback evaluates it
+            let t = Double(i) / Double(fadeSamples)
             #expect(abs(out[0][i] - Float(taper.gain(at: t))) < 1e-6, "fade-in diverges at frame \(i)")
         }
     }
@@ -52,7 +52,7 @@ struct BufferFadeTaperParityTests {
         let out = try #require(faded.floatChannelData)
 
         for i in stride(from: fadeSamples, to: frames, by: 97) {
-            let s = Double(i - fadeSamples + 1) / Double(fadeSamples)
+            let s = Double(i - fadeSamples) / Double(fadeSamples)
             #expect(abs(out[0][i] - Float(taper.fadeOutGain(at: s))) < 1e-6, "fade-out diverges at frame \(i)")
         }
     }
@@ -78,28 +78,31 @@ struct BufferFadeTaperParityTests {
         let out = try #require(faded.floatChannelData)
 
         for i in stride(from: 0, to: fadeSamples, by: 97) {
-            #expect(abs(out[0][i] - Float(Double(i + 1) / Double(fadeSamples))) < 1e-6)
+            #expect(abs(out[0][i] - Float(Double(i) / Double(fadeSamples))) < 1e-6)
         }
         for i in stride(from: fadeSamples, to: fadeSamples * 2, by: 97) {
-            let s = Double(i - fadeSamples + 1) / Double(fadeSamples)
+            let s = Double(i - fadeSamples) / Double(fadeSamples)
             #expect(abs(out[0][i] - Float(1.0 - s)) < 1e-6)
         }
     }
 
+    /// Frame i sits at i / sampleRate: the fade-in opens on silence and reaches unity on the first
+    /// frame after it, and the fade-out starts at unity and reaches silence one frame past the
+    /// buffer's last.
     @Test(arguments: AudioTaper.presets)
-    func fadeReachesBothEndpoints(taper: AudioTaper) throws {
-        let fadeSamples = Int(sampleRate)
-        let frames = fadeSamples * 2
+    func fadeEndpointsFallOnFrameStarts(taper: AudioTaper) throws {
+        // 0.125 s fades in 0.375 s: every boundary is exact in binary, so each lands on a frame.
+        let fadeSamples = 6000
+        let frames = fadeSamples * 3
         let buffer = try unityBuffer(frames: frames)
-        let faded = try buffer.fade(inTime: 1.0, outTime: 1.0, inTaper: taper, outTaper: taper)
+        let faded = try buffer.fade(inTime: 0.125, outTime: 0.125, inTaper: taper, outTaper: taper)
         let out = try #require(faded.floatChannelData)
 
-        // The render's first fade-in sample sits at t = 1/fadeSamples rather than 0, so silence
-        // is a property of the formula; unity and silence at the region boundaries are the buffer's.
-        // skew is a Float, so the fade-out's 1 is exact only to Float precision
-        #expect(taper.gain(at: 0) == 0)
-        #expect(abs(taper.fadeOutGain(at: 0) - 1) < 1e-6)
-        #expect(abs(out[0][fadeSamples - 1] - 1.0) < 1e-6, "fade-in does not reach unity")
-        #expect(out[0][frames - 1] < 1e-6, "fade-out does not reach silence")
+        #expect(out[0][0] == 0, "fade-in does not open on silence")
+        #expect(abs(out[0][fadeSamples] - 1.0) < 1e-6, "fade-in does not reach unity")
+        #expect(abs(out[0][frames - fadeSamples] - 1.0) < 1e-6, "fade-out does not start at unity")
+
+        let last = Float(taper.fadeOutGain(at: Double(fadeSamples - 1) / Double(fadeSamples)))
+        #expect(abs(out[0][frames - 1] - last) < 1e-6)
     }
 }

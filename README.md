@@ -64,11 +64,21 @@ with the element and survive a relaunch.
 | Type | Description |
 |------|-------------|
 | **`AudioEditDescription`** | The pending edits on a file. Applied in pipeline order: trim, normalize, fade |
-| **`FadeDescription`** | In and out times, and the taper each uses |
+| **`FadeDescription`** | In and out times, and the taper each uses. `curve(regionDuration:maximumGain:)` is its gain as a `ParameterCurve`, which the render and playback both evaluate |
 | **`NormalizeDescription`** / **`NormalizeMode`** / **`NormalizeOptions`** | Target level and how it is measured |
 
 A `nil` description means no edits are queued, and one with all-default values is functionally the
 same thing. It is cleared once the edit has been rendered and written.
+
+## Automation values
+
+| Type | Description |
+|------|-------------|
+| **`ParameterCurve`** | A parameter's automation: ordered `CurveSegment`s in seconds of source time, each with its own start value and `CurveShape` (linear, taper or step). `value(at:)` is the evaluation the render thread runs, and `replacing(range:with:)` merges a recording |
+| **`TimelineMapping`** | Which source position is processed at each render sample: a `TimelineAnchor`, rate, direction and an optional loop that positions wrap into |
+
+Both are evaluated in C (`SPFKCurve.h` in `SPFKAudioBaseC`), so code on the render thread runs the
+same arithmetic as `value(at:)` and `position(atRenderSample:)`.
 
 ## Conversion
 

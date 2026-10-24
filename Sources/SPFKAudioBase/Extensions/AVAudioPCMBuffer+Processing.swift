@@ -126,32 +126,13 @@ extension AVAudioPCMBuffer {
         let sampleRate = format.sampleRate
         let channelCount = Int(format.channelCount)
 
-        let bufferDuration = Double(length) / sampleRate
-        guard inTime + outTime <= bufferDuration else {
-            let msg = "fade inTime + outTime (\(inTime + outTime)s) exceeds buffer duration (\(bufferDuration)s)"
-            throw NSError(description: msg)
-        }
-
-        let fadeInSamples = Int(sampleRate * inTime)
-        let fadeOutSamples = Int(sampleRate * outTime)
-        let fadeOutStart = Int(length) - fadeOutSamples
+        // The curve playback evaluates, frame i at i / sampleRate. Overlapping fades are clamped
+        // favoring the fade-out, as the fade editor draws them.
+        let fade = FadeDescription(inTime: inTime, outTime: outTime, inTaper: inTaper, outTaper: outTaper)
+        let curve = try fade.curve(regionDuration: Double(length) / sampleRate)
 
         for i in 0 ..< Int(length) {
-            let gain: Float
-
-            if i < fadeInSamples, inTime > 0 {
-                // normalized position in [0, 1] across the fade-in region
-                // fadeInSamples > 0 is guaranteed: i >= 0 and i < fadeInSamples implies fadeInSamples >= 1
-                let t = Double(i + 1) / Double(fadeInSamples)
-                gain = Float(inTaper.gain(at: t))
-            } else if i >= fadeOutStart, outTime > 0, fadeOutSamples > 0 {
-                // normalized position in [0, 1] across the fade-out region (0 = start of fade, 1 = silence)
-                // fadeOutSamples > 0 guards against division by zero when outTime is positive but sub-sample
-                let t = Double(i - fadeOutStart + 1) / Double(fadeOutSamples)
-                gain = Float(outTaper.fadeOutGain(at: t))
-            } else {
-                gain = 1.0
-            }
+            let gain = curve.value(at: Double(i) / sampleRate)
 
             for n in 0 ..< channelCount {
                 fadeBuffer.floatChannelData?[n][i] = floatChannelData[n][i] * gain

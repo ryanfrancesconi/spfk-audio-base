@@ -122,15 +122,19 @@ class AVAudioPCMBufferProcessingTests {
         }
     }
 
-    @Test func fadeThrowsWhenInOutExceedsBufferDuration() throws {
-        // 0.5 s buffer at 44100 Hz. inTime + outTime = 0.6 s > 0.5 s.
+    @Test func overlappingFadesClampFavoringTheFadeOut() throws {
+        // 0.5 s buffer at 44100 Hz. inTime + outTime = 0.6 s > 0.5 s, so the fade-in becomes 0.2 s.
+        let sampleRate: Double = 44100
         let buffer = makeBuffer(
-            channels: [Array(repeating: Float(1.0), count: Int(44100 * 0.5))],
-            sampleRate: 44100
+            channels: [Array(repeating: Float(1.0), count: Int(sampleRate * 0.5))],
+            sampleRate: sampleRate
         )
-        #expect(throws: (any Error).self) {
-            try buffer.fade(inTime: 0.3, outTime: 0.3)
-        }
+        let out = try samples(buffer.fade(inTime: 0.3, outTime: 0.3, inTaper: .linear, outTaper: .linear))
+
+        let fadeInEnd = Int(sampleRate * 0.2)
+        #expect(abs(out[fadeInEnd / 2] - 0.5) < 1e-4)
+        #expect(abs(out[fadeInEnd] - 1) < 1e-4)
+        #expect(abs(out[fadeInEnd + Int(sampleRate * 0.15)] - 0.5) < 1e-4)
     }
 
     @Test func fadeInGainIncreasesMonotonically() throws {
@@ -276,8 +280,10 @@ class AVAudioPCMBufferProcessingTests {
         let out = samples(result)
         // First sample is inside the 5 ms fade-in — must be well below 1.
         #expect(out[0] < 0.1)
-        // Last sample is in the final frame of the 5 ms fade-out — gain is near 0.
-        #expect(out[out.count - 1] < 1e-5)
+        // The last sample is one frame before the 5 ms fade-out reaches silence.
+        let deClickFrames = 0.005 * sampleRate
+        let lastGain = Float(AudioTaper.default.fadeOutGain(at: 1 - 1 / deClickFrames))
+        #expect(abs(out[out.count - 1] - lastGain) < 1e-5)
     }
 
     @Test func applyingTrimExplicitFadeLongerThanDeClickWins() throws {
