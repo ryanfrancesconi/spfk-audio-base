@@ -7,7 +7,7 @@ import SPFKBase
 ///
 /// Every value is clamped into its range at construction, on decode and on assignment. Frequencies
 /// are stored in Hz, so an edit means the same at any sample rate.
-public struct TimePitchDescription: Equatable, Sendable {
+public struct TimePitchDescription: Hashable, Sendable {
     public static let rateRange: ClosedRange<Double> = 0.5 ... 2.0
     public static let semitoneRange: ClosedRange<Int> = -24 ... 24
     public static let centRange: ClosedRange<Double> = -100 ... 100
