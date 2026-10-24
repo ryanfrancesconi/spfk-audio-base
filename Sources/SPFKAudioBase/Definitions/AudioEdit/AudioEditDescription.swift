@@ -10,7 +10,7 @@ import SPFKBase
 /// Stored on PlaylistElement and persisted to JSON so edits survive app restarts.
 /// Cleared to nil after the edit is rendered and written to disk.
 ///
-/// Operations are applied in pipeline order: trim → channels → normalize → fade.
+/// Operations are applied in pipeline order: trim → channels → time/pitch → normalize → fade.
 public struct AudioEditDescription: Equatable, Sendable {
     // MARK: - Trim
 
@@ -21,6 +21,11 @@ public struct AudioEditDescription: Equatable, Sendable {
 
     /// A stereo channel operation, applied after the trim.
     public var channels: ChannelOperation = .none
+
+    // MARK: - Time/pitch
+
+    /// A change of rate and pitch, applied after the channel operation.
+    public var timePitch: TimePitchDescription = TimePitchDescription()
 
     // MARK: - Normalize
 
@@ -36,25 +41,27 @@ public struct AudioEditDescription: Equatable, Sendable {
 
     /// True when no edit operations are set — the description is a no-op.
     public var isEmpty: Bool {
-        trim.isEmpty && channels == .none && normalize.isEmpty && fade.isEmpty
+        trim.isEmpty && channels == .none && normalize.isEmpty && fade.isEmpty && timePitch.isEmpty
     }
 
     /// True when a render of this edit can exceed 0 dBFS from something other than a normalize the
-    /// user measured, so the renderer must bring it under the ceiling.
+    /// user measured, so the renderer must bring it under the ceiling. A stretch raises sample peaks.
     public var needsCeiling: Bool {
-        channels != .none
+        channels != .none || !timePitch.isEmpty
     }
 
     public init(
         trim: TrimDescription = TrimDescription(),
         channels: ChannelOperation = .none,
         normalize: NormalizeDescription = NormalizeDescription(),
-        fade: FadeDescription = FadeDescription()
+        fade: FadeDescription = FadeDescription(),
+        timePitch: TimePitchDescription = TimePitchDescription()
     ) {
         self.trim = trim
         self.channels = channels
         self.normalize = normalize
         self.fade = fade
+        self.timePitch = timePitch
     }
 }
 
@@ -62,7 +69,7 @@ public struct AudioEditDescription: Equatable, Sendable {
 
 extension AudioEditDescription: Codable {
     private enum CodingKeys: String, CodingKey {
-        case trim, channels, normalize, fade
+        case trim, channels, normalize, fade, timePitch
     }
 
     public init(from decoder: any Decoder) throws {
@@ -71,6 +78,7 @@ extension AudioEditDescription: Codable {
         channels = try c.decodeIfPresent(ChannelOperation.self, forKey: .channels) ?? .none
         normalize = try c.decodeIfPresent(NormalizeDescription.self, forKey: .normalize) ?? NormalizeDescription()
         fade = try c.decodeIfPresent(FadeDescription.self, forKey: .fade) ?? FadeDescription()
+        timePitch = try c.decodeIfPresent(TimePitchDescription.self, forKey: .timePitch) ?? TimePitchDescription()
     }
 }
 

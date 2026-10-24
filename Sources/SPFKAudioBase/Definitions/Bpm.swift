@@ -117,6 +117,12 @@ public struct Bpm: Equatable, Sendable, Comparable, Hashable, Codable {
         return Bpm(rounded)
     }
 
+    /// This tempo played at `rate`, rounded to two decimal places, as a stretched file's BPM tag is
+    /// written: 120 at 0.7777 is 93.32.
+    public func scaled(by rate: Double) -> Bpm? {
+        Bpm(rawValue * rate)?.rounded(to: 2)
+    }
+
     /// Returns whether this tempo is an octave-equivalent multiple of `rhs`.
     ///
     /// Checks 1/8x through 8x multiples. When `tolerance` is greater than zero,

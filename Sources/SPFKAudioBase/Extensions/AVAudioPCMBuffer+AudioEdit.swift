@@ -8,11 +8,15 @@ extension AVAudioPCMBuffer {
     /// Apply an `AudioEditDescription` to this buffer, returning a new processed buffer.
     ///
     /// The composition of `applyingSourceStages` and `applyingOutputStages`.
-    /// Returns `self` unchanged when `edit.isEmpty` is true.
+    /// Returns `self` unchanged when `edit.isEmpty` is true. Throws for a non-empty `timePitch`: the
+    /// stretch runs between the two stages, in `SPFKTempo`, which this package cannot reach.
     /// - Parameter isPreTrimmed: the buffer already holds exactly `edit.trim`'s window, so the
     ///   extract is skipped while the boundaries still get their de-click. For a caller that read
     ///   only the window from disk rather than the whole file.
     public func applying(_ edit: AudioEditDescription, isPreTrimmed: Bool = false) throws -> AVAudioPCMBuffer {
+        guard edit.timePitch.isEmpty else {
+            throw NSError(description: "A time/pitch edit must be rendered between the source and output stages")
+        }
         guard !edit.isEmpty else { return self }
 
         return try applyingSourceStages(edit, isPreTrimmed: isPreTrimmed)
@@ -36,7 +40,9 @@ extension AVAudioPCMBuffer {
     ///
     /// A non-empty trim adds a 5 ms de-click at both boundaries, so this stage expects the buffer
     /// `applyingSourceStages` produced for the same edit.
-    public func applyingOutputStages(_ edit: AudioEditDescription) throws -> AVAudioPCMBuffer {
+    /// - Parameter timeScale: the rate the buffer was stretched by. Fade times are source seconds, so
+    ///   they are divided by it to cover the same material; the de-click stays 5 ms of output.
+    public func applyingOutputStages(_ edit: AudioEditDescription, timeScale: Double = 1) throws -> AVAudioPCMBuffer {
         let deClick: TimeInterval = 0.005
 
         var buffer = self
@@ -49,8 +55,10 @@ extension AVAudioPCMBuffer {
         let deClickSamples = Int(buffer.format.sampleRate * deClick)
         let canDeClick = !edit.trim.isEmpty && deClickSamples > 0 && deClickSamples * 2 <= Int(buffer.frameLength)
 
-        var fadeIn = canDeClick ? max(edit.fade.inTime, deClick) : edit.fade.inTime
-        var fadeOut = canDeClick ? max(edit.fade.outTime, deClick) : edit.fade.outTime
+        let scaledIn = edit.fade.inTime / timeScale
+        let scaledOut = edit.fade.outTime / timeScale
+        var fadeIn = canDeClick ? max(scaledIn, deClick) : scaledIn
+        var fadeOut = canDeClick ? max(scaledOut, deClick) : scaledOut
 
         if fadeIn > 0 || fadeOut > 0 {
             // De-click expansion can push a small fade past the buffer's duration.

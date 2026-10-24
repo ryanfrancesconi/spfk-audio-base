@@ -14,16 +14,21 @@ public enum ClippingCeiling: String, Codable, Sendable, CaseIterable {
 public struct AudioRenderSettings: Hashable, Codable, Sendable {
     public var ceiling: ClippingCeiling = .scale
 
-    public init(ceiling: ClippingCeiling = .scale) {
+    /// The stretcher setting a preview and every render of a time/pitch edit share.
+    public var timePitchQuality: TimePitchQuality = .best
+
+    public init(ceiling: ClippingCeiling = .scale, timePitchQuality: TimePitchQuality = .best) {
         self.ceiling = ceiling
+        self.timePitchQuality = timePitchQuality
     }
 
     private enum CodingKeys: String, CodingKey {
-        case ceiling
+        case ceiling, timePitchQuality
     }
 
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         ceiling = try c.decodeIfPresent(ClippingCeiling.self, forKey: .ceiling) ?? .scale
+        timePitchQuality = try c.decodeIfPresent(TimePitchQuality.self, forKey: .timePitchQuality) ?? .best
     }
 }
