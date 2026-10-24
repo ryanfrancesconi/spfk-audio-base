@@ -78,7 +78,7 @@ public struct TimelineMapping: Equatable, Sendable {
 
     /// The source position at `renderSample`, with the anchor bound to `anchorSample`.
     public func position(atRenderSample renderSample: Int64, anchorSample: Int64) -> Double {
-        var mapping = cMapping(anchorSample: anchorSample)
+        var mapping = renderMapping(anchorSample: anchorSample)
         return spfk_timeline_position(&mapping, renderSample)
     }
 
@@ -89,7 +89,8 @@ public struct TimelineMapping: Equatable, Sendable {
         return position(atRenderSample: renderSample, anchorSample: anchorSample)
     }
 
-    func cMapping(anchorSample: Int64) -> SPFKTimelineMapping {
+    /// The mapping as the render thread reads it, with the anchor bound to `anchorSample`.
+    public func renderMapping(anchorSample: Int64) -> SPFKTimelineMapping {
         SPFKTimelineMapping(
             renderAnchor: anchorSample,
             sourceAnchor: sourceAnchor,

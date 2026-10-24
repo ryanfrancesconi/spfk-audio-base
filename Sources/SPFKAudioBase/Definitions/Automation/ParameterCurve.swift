@@ -43,6 +43,9 @@ public struct ParameterCurve: Sendable {
         try self.init([CurveSegment(start: 0, end: 0, startValue: value, endValue: value)])
     }
 
+    /// `segments` as `SPFKCurveSegment`s, for handing to the render thread.
+    public var renderSegments: [SPFKCurveSegment] { evaluation }
+
     public func value(at position: Double) -> AUValue {
         evaluation.withUnsafeBufferPointer { buffer in
             AUValue(spfk_curve_value(buffer.baseAddress, buffer.count, position))
