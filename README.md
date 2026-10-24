@@ -51,8 +51,10 @@ by that limit, which is why they are in `metadataTypes` while having no `avFileT
 
 `value` sets the curvature exponent and `skew` blends that power curve with its own inverse,
 concave against convex. Every consumer — PCM buffer fading, parameter automation, and the drawn
-overlay — evaluates the same gain function, so a fade renders as it was auditioned. Use the named
-presets rather than raw values; the two properties are only meaningful together.
+overlay — evaluates the same gain function, so a fade renders as it was auditioned. That function
+is `spfk_taper_gain`, a header-only C function in the `SPFKAudioBaseC` product, so render-thread
+code calls it directly. Use the named presets rather than raw values; the two properties are only
+meaningful together.
 
 ## Edits
 

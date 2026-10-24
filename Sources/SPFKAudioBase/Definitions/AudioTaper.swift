@@ -2,6 +2,7 @@
 
 import AudioToolbox
 import CoreGraphics
+import SPFKAudioBaseC
 
 /// Describes the shape of a fade or gain-ramp curve via a power-law exponent and a blend weight.
 ///
@@ -74,22 +75,16 @@ extension AudioTaper {
 // MARK: - Curve
 
 extension AudioTaper {
-    /// Gain value at normalized position `t` ∈ [0, 1] using the blend formula.
-    /// Matches the evaluation used in `RegionFadeDescription.gainAt(playbackOffset:)` fade-in zone.
+    /// Gain value at normalized position `t` ∈ [0, 1] using the blend formula, through
+    /// `spfk_taper_gain`, the evaluation the render thread shares.
     public func gain(at t: Double) -> Double {
-        let taper1 = pow(t, Double(value))
-        let taper2 = 1.0 - pow(1.0 - t, Double(inverseValue))
-        let result = taper1 * Double(1 - skew) + taper2 * Double(skew)
-        return max(0.0, min(1.0, result))
+        spfk_taper_gain(t, Double(value), Double(skew))
     }
 
     /// Gain value at normalized fade-out position `s` ∈ [0, 1] (0 = fade start, 1 = silence).
-    /// Mirror of ``gain(at:)`` for the descending ramp: uses the inverse exponent for the
-    /// concave term and the forward exponent for the convex term.
+    /// The descending ramp of the inverse taper: `1 − gain(at: s)` with exponent `1 / value`.
     public func fadeOutGain(at s: Double) -> Double {
-        let t1 = 1.0 - pow(s, Double(inverseValue))
-        let t2 = pow(1.0 - s, Double(value))
-        return max(0.0, min(1.0, t1 * Double(1 - skew) + t2 * Double(skew)))
+        1 - spfk_taper_gain(s, 1 / Double(value), Double(skew))
     }
 
     /// Returns a `CGPath` tracing the gain curve for this taper across `rect`.

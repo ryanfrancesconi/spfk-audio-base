@@ -11,7 +11,11 @@ let package = Package(
         .library(
             name: "SPFKAudioBase",
             targets: ["SPFKAudioBase"]
-        )
+        ),
+        .library(
+            name: "SPFKAudioBaseC",
+            targets: ["SPFKAudioBaseC"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/ryanfrancesconi/spfk-base", from: "1.2.2"),
@@ -24,13 +28,20 @@ let package = Package(
             dependencies: [
                 .product(name: "SPFKBase", package: "spfk-base"),
                 .product(name: "SPFKFileSystem", package: "spfk-filesystem"),
+                .targetItem(name: "SPFKAudioBaseC", condition: nil),
             ],
             resources: [.process("Resources")]
+        ),
+        .target(
+            name: "SPFKAudioBaseC",
+            dependencies: [],
+            publicHeadersPath: "include"
         ),
         .testTarget(
             name: "SPFKAudioBaseTests",
             dependencies: [
                 .targetItem(name: "SPFKAudioBase", condition: nil),
+                .targetItem(name: "SPFKAudioBaseC", condition: nil),
                 .product(name: "SPFKBase", package: "spfk-base"),
                 .product(name: "SPFKTesting", package: "spfk-testing"),
             ]

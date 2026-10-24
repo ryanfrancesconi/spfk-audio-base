@@ -2,6 +2,7 @@
 
 import AudioToolbox
 import Foundation
+import SPFKAudioBaseC
 import SPFKBase
 import SPFKTesting
 import Testing
@@ -146,6 +147,38 @@ struct AudioTaperTests {
                 #expect(gain <= prev)
                 prev = gain
             }
+        }
+    }
+
+    // MARK: - Shared evaluation
+
+    /// A fade-out is the descending ramp of the inverse taper:
+    /// 1 − [(1−k)x^(1/v) + k(1 − (1−x)^v)] = (1−k)(1 − x^(1/v)) + k(1−x)^v.
+    @Test func fadeOutIsTheDescendingInverseTaper() {
+        let tapers = AudioTaper.presets + [AudioTaper(value: 2, skew: 0.1), AudioTaper(value: 0.6, skew: 0.8)]
+
+        for taper in tapers {
+            let v = Double(taper.value), k = Double(taper.skew)
+
+            for i in 0 ... 1000 {
+                let x = Double(i) / 1000
+                let closedForm = (1 - k) * (1 - pow(x, 1 / v)) + k * pow(1 - x, v)
+                let descending = 1 - spfk_taper_gain(x, 1 / v, k)
+
+                #expect(abs(taper.fadeOutGain(at: x) - closedForm) < 1e-12, "\(taper) at \(x)")
+                #expect(abs(descending - closedForm) < 1e-12, "\(taper) at \(x)")
+            }
+        }
+    }
+
+    /// Positions past either end evaluate as the end, never as a NaN from a negative base.
+    @Test func positionsOutsideTheUnitRangeClampToTheEnds() {
+        for taper in AudioTaper.presets {
+            #expect(abs(taper.gain(at: -0.01)) < 1e-12)
+            #expect(abs(taper.gain(at: 1.01) - 1) < 1e-12)
+            #expect(abs(taper.fadeOutGain(at: -0.01) - 1) < 1e-12)
+            #expect(abs(taper.fadeOutGain(at: 1.01)) < 1e-12)
+            #expect(spfk_taper_gain(.nan, Double(taper.value), Double(taper.skew)) == 0)
         }
     }
 
