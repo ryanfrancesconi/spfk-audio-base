@@ -21,8 +21,16 @@ public enum TimelineAnchor: Equatable, Sendable {
 ///
 /// Positions are computed per sample from the anchor rather than accumulated, so a loop of any
 /// length and any number of iterations is one mapping. Before the anchor, the position is
-/// `sourceAnchor`.
+/// `sourceAnchor`. Scheduled ``rateChanges`` fold the mapping at their render times, keeping the
+/// position continuous.
 public struct TimelineMapping: Equatable, Sendable {
+    /// A new rate from a render time on, published ahead of it.
+    public struct RateChange: Equatable, Sendable {
+        /// A ``TimelineAnchor/sample(_:)`` or ``TimelineAnchor/host(_:)`` time.
+        public let effectiveFrom: TimelineAnchor
+        public let rate: Double
+    }
+
     public enum Direction: Int32, Sendable {
         case forward = 1
         case reverse = -1
@@ -33,6 +41,7 @@ public struct TimelineMapping: Equatable, Sendable {
         case invalidSampleRate
         case invalidSourceAnchor
         case invalidLoop
+        case invalidRateChange
     }
 
     public let renderAnchor: TimelineAnchor
@@ -49,6 +58,9 @@ public struct TimelineMapping: Equatable, Sendable {
     public let loop: Range<Double>?
 
     public let renderSampleRate: Double
+
+    /// In the order they take effect.
+    public let rateChanges: [RateChange]
 
     public init(
         renderAnchor: TimelineAnchor,
@@ -74,11 +86,42 @@ public struct TimelineMapping: Equatable, Sendable {
         self.direction = direction
         self.loop = loop
         self.renderSampleRate = renderSampleRate
+        rateChanges = []
     }
 
-    /// The source position at `renderSample`, with the anchor bound to `anchorSample`.
-    public func position(atRenderSample renderSample: Int64, anchorSample: Int64) -> Double {
+    private init(_ mapping: TimelineMapping, rateChanges: [RateChange]) {
+        renderAnchor = mapping.renderAnchor
+        sourceAnchor = mapping.sourceAnchor
+        rate = mapping.rate
+        direction = mapping.direction
+        loop = mapping.loop
+        renderSampleRate = mapping.renderSampleRate
+        self.rateChanges = rateChanges
+    }
+
+    /// This mapping, changing to `rate` at `effectiveFrom` after any changes already scheduled.
+    public func changingRate(to rate: Double, from effectiveFrom: TimelineAnchor) throws -> TimelineMapping {
+        guard rate.isFinite, rate > 0 else { throw ValidationError.invalidRate }
+        guard effectiveFrom != .atAdoption else { throw ValidationError.invalidRateChange }
+
+        return TimelineMapping(self, rateChanges: rateChanges + [RateChange(effectiveFrom: effectiveFrom, rate: rate)])
+    }
+
+    /// The source position at `renderSample`, with the anchor bound to `anchorSample` and each
+    /// host-timed rate change to the sample `hostSample` gives it. A change it cannot bind is skipped.
+    public func position(
+        atRenderSample renderSample: Int64,
+        anchorSample: Int64,
+        hostSample: (UInt64) -> Int64? = { _ in nil }
+    ) -> Double {
         var mapping = renderMapping(anchorSample: anchorSample)
+
+        for change in rateChanges {
+            guard let changeSample = change.renderSample(hostSample: hostSample) else { continue }
+            guard changeSample < renderSample else { break }
+            mapping = spfk_timeline_fold(&mapping, changeSample, change.rate)
+        }
+
         return spfk_timeline_position(&mapping, renderSample)
     }
 
@@ -100,5 +143,15 @@ public struct TimelineMapping: Equatable, Sendable {
             loopEnd: loop?.upperBound ?? 0,
             renderSampleRate: renderSampleRate
         )
+    }
+}
+
+extension TimelineMapping.RateChange {
+    func renderSample(hostSample: (UInt64) -> Int64?) -> Int64? {
+        switch effectiveFrom {
+        case let .sample(sample): sample
+        case let .host(hostTime): hostSample(hostTime)
+        case .atAdoption: nil
+        }
     }
 }

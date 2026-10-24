@@ -129,3 +129,17 @@ static inline double spfk_timeline_position(const SPFKTimelineMapping *mapping, 
 
     return position;
 }
+
+/// The mapping with its rate changed from `renderSample` on: anchored there, at the position it
+/// already gives that sample, so the position stays continuous and only its slope changes. A sample
+/// before the anchor folds at the anchor.
+static inline SPFKTimelineMapping spfk_timeline_fold(const SPFKTimelineMapping *mapping, int64_t renderSample,
+                                                     double rate) {
+    SPFKTimelineMapping folded = *mapping;
+    if (renderSample < mapping->renderAnchor) renderSample = mapping->renderAnchor;
+
+    folded.sourceAnchor = spfk_timeline_position(mapping, renderSample);
+    folded.renderAnchor = renderSample;
+    folded.rate = rate;
+    return folded;
+}
