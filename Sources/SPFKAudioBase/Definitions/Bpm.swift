@@ -105,6 +105,37 @@ public struct Bpm: Equatable, Sendable, Comparable, Hashable, Codable {
         return Bpm(value)
     }
 
+    /// The rate that plays this tempo at `target` folded by octaves into `self × rates`, taking the
+    /// fold nearest 1× by ratio and the faster on a tie. Nil only for a window under an octave wide.
+    ///
+    /// Folds in `Double` rather than through ``clamped(to:)``, whose `Float` bounds would let a fold
+    /// land a hair outside `rates`.
+    public func rate(toReach target: Bpm, within rates: ClosedRange<Double>) -> Double? {
+        guard rates.lowerBound > 0 else { return nil }
+
+        var ratio = target.rawValue / rawValue
+
+        while ratio < rates.lowerBound {
+            ratio *= 2
+        }
+
+        while ratio > rates.upperBound {
+            ratio /= 2
+        }
+
+        guard rates.contains(ratio) else { return nil }
+
+        let distance = { (rate: Double) in abs(log2(rate)) }
+
+        return [ratio * 2, ratio / 2]
+            .filter { rates.contains($0) }
+            .reduce(ratio) { best, other in
+                let difference = distance(other) - distance(best)
+                if abs(difference) < 1e-9 { return max(best, other) }
+                return difference < 0 ? other : best
+            }
+    }
+
     /// Returns a new `Bpm` rounded to `decimalPlaces` decimal places.
     ///
     /// Use `decimalPlaces: 0` for integer rounding, 1–3 for fractional.

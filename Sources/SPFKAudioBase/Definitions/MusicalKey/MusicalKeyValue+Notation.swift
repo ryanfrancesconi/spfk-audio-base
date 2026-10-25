@@ -9,6 +9,17 @@ extension MusicalKeyValue {
         return MusicalKeyValue(name: NoteName(rawValue: Int32(index)) ?? name, tonality: tonality)
     }
 
+    /// The shift in −5…+6 that brings this key to `target`, or to `target`'s relative key when the
+    /// modes differ; a tritone is +6. Nil when either tonality is unknown.
+    public func nearestTransposition(to target: MusicalKeyValue) -> Int? {
+        guard tonality != .unknown, target.tonality != .unknown else { return nil }
+
+        let target = target.tonality == tonality ? target : target.relativeKey
+        let distance = (Int(target.name.rawValue) - Int(name.rawValue) + 12) % 12
+
+        return distance <= 6 ? distance : distance - 12
+    }
+
     /// Reads a key in any `MusicalKeyNotation`, ignoring case and surrounding whitespace.
     ///
     /// `♯`/`♭` read as `#`/`b`; "m", "min" and "minor" mark a minor key, "maj" and "major" (or
