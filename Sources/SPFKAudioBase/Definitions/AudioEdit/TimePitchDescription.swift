@@ -51,6 +51,12 @@ public struct TimePitchDescription: Hashable, Sendable {
     /// The tonality limit and formant correction act only on a pitch shift, so they do not count.
     public var isEmpty: Bool { rate == 1 && pitchCents == 0 && formantSemitones == 0 }
 
+    /// Whether changing from `old` to this moves the output level, and so invalidates a normalize
+    /// measured after the stretch: a change of rate, pitch or formant shift.
+    public func invalidatesNormalize(from old: TimePitchDescription) -> Bool {
+        old.rate != rate || old.pitchCents != pitchCents || old.formantSemitones != formantSemitones
+    }
+
     public init(
         semitones: Int = 0,
         cents: Double = 0,
