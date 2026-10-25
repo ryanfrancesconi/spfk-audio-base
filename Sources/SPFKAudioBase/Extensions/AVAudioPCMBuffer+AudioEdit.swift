@@ -23,7 +23,7 @@ extension AVAudioPCMBuffer {
             .applyingOutputStages(edit)
     }
 
-    /// The stages that select what is rendered: trim, then channels.
+    /// The stages that select what is rendered: trim, channels, then reverse.
     public func applyingSourceStages(_ edit: AudioEditDescription, isPreTrimmed: Bool = false) throws -> AVAudioPCMBuffer {
         var buffer = self
 
@@ -33,7 +33,8 @@ extension AVAudioPCMBuffer {
             buffer = try buffer.extract(from: start, to: end)
         }
 
-        return try buffer.applyingChannelOperation(edit.channels)
+        buffer = try buffer.applyingChannelOperation(edit.channels)
+        return edit.isReversed ? try buffer.reverse() : buffer
     }
 
     /// The stages that shape the rendered signal: normalize gain, then fades.
@@ -42,6 +43,8 @@ extension AVAudioPCMBuffer {
     /// `applyingSourceStages` produced for the same edit.
     /// - Parameter timeScale: the rate the buffer was stretched by. Fade times are source seconds, so
     ///   they are divided by it to cover the same material; the de-click stays 5 ms of output.
+    ///   A reversed edit applies ``FadeDescription/mirroredForReverse(regionDuration:)``, so each fade
+    ///   stays on the material it covered in the source.
     public func applyingOutputStages(_ edit: AudioEditDescription, timeScale: Double = 1) throws -> AVAudioPCMBuffer {
         let deClick: TimeInterval = 0.005
 
@@ -55,19 +58,23 @@ extension AVAudioPCMBuffer {
         let deClickSamples = Int(buffer.format.sampleRate * deClick)
         let canDeClick = !edit.trim.isEmpty && deClickSamples > 0 && deClickSamples * 2 <= Int(buffer.frameLength)
 
-        let scaledIn = edit.fade.inTime / timeScale
-        let scaledOut = edit.fade.outTime / timeScale
+        let bufferDuration = Double(buffer.frameLength) / buffer.format.sampleRate
+        let fade = edit.isReversed
+            ? edit.fade.mirroredForReverse(regionDuration: bufferDuration * timeScale)
+            : edit.fade
+
+        let scaledIn = fade.inTime / timeScale
+        let scaledOut = fade.outTime / timeScale
         var fadeIn = canDeClick ? max(scaledIn, deClick) : scaledIn
         var fadeOut = canDeClick ? max(scaledOut, deClick) : scaledOut
 
         if fadeIn > 0 || fadeOut > 0 {
             // De-click expansion can push a small fade past the buffer's duration.
-            let bufferDuration = Double(buffer.frameLength) / buffer.format.sampleRate
             let safe = AudioEditDescription.clampedFades(inTime: fadeIn, outTime: fadeOut, duration: bufferDuration)
             fadeIn = safe.inTime
             fadeOut = safe.outTime
             if fadeIn > 0 || fadeOut > 0 {
-                buffer = try buffer.fade(inTime: fadeIn, outTime: fadeOut, inTaper: edit.fade.inTaper, outTaper: edit.fade.outTaper)
+                buffer = try buffer.fade(inTime: fadeIn, outTime: fadeOut, inTaper: fade.inTaper, outTaper: fade.outTaper)
             }
         }
 

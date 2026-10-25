@@ -152,6 +152,7 @@ struct AudioEditDescriptionTimePitchTests {
         let full = AudioEditDescription(
             trim: TrimDescription(inPoint: 1, outPoint: 3),
             channels: .swap,
+            isReversed: true,
             normalize: NormalizeDescription(gain: 2),
             fade: FadeDescription(inTime: 0.5, outTime: 0.25),
             timePitch: TimePitchDescription(semitones: 3, rate: 0.8)

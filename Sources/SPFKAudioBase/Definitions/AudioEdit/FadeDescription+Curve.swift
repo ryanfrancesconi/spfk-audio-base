@@ -34,6 +34,19 @@ extension FadeDescription {
         return result
     }
 
+    /// The same fades on the time-reversed region: each stays on the material it covered, so the
+    /// fade-out becomes the fade-in on ``AudioTaper/timeMirrored`` and the reverse. Clamped first,
+    /// so an overlap resolves in favor of the original fade-out.
+    public func mirroredForReverse(regionDuration: TimeInterval) -> FadeDescription {
+        let fade = clamped(toRegion: regionDuration)
+        return FadeDescription(
+            inTime: fade.outTime,
+            outTime: fade.inTime,
+            inTaper: fade.outTaper.timeMirrored,
+            outTaper: fade.inTaper.timeMirrored
+        )
+    }
+
     /// The gain these fades apply over a region of `regionDuration` seconds, in seconds from the
     /// region's start, clamped with ``clamped(toRegion:favoring:)`` favoring the fade-out.
     ///

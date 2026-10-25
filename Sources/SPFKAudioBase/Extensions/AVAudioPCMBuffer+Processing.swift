@@ -68,6 +68,10 @@ extension AVAudioPCMBuffer {
 
     /// - Returns: A reversed buffer
     public func reverse() throws -> AVAudioPCMBuffer {
+        guard let floatChannelData else {
+            throw NSError(description: "floatChannelData is nil")
+        }
+
         guard
             let reversedBuffer = AVAudioPCMBuffer(
                 pcmFormat: format,
@@ -80,11 +84,13 @@ extension AVAudioPCMBuffer {
         let length = Int(frameLength)
         let channelCount = Int(format.channelCount)
 
+        guard let destination = reversedBuffer.floatChannelData else {
+            throw NSError(description: "floatChannelData is nil")
+        }
+
         for channel in 0 ..< channelCount {
-            guard let src = floatChannelData?[channel],
-                  let dest = reversedBuffer.floatChannelData?[channel]
-            else { continue }
-            cblas_scopy(Int32(length), src, 1, dest, 1)
+            let dest = destination[channel]
+            cblas_scopy(Int32(length), floatChannelData[channel], 1, dest, 1)
             vDSP_vrvrs(dest, 1, vDSP_Length(length))
         }
 

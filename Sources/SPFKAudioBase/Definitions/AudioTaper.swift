@@ -70,6 +70,12 @@ extension AudioTaper {
 
     /// Index of this taper in ``presets``, or `nil` if it is not a named preset.
     public var presetIndex: Int? { AudioTaper.presets.firstIndex(of: self) }
+
+    /// The taper that traces this one backwards in time: a fade-out on it, played reversed, is a
+    /// fade-in on the result, and the reverse.
+    public var timeMirrored: AudioTaper {
+        AudioTaper(value: value, skew: 1 - skew)
+    }
 }
 
 // MARK: - Curve

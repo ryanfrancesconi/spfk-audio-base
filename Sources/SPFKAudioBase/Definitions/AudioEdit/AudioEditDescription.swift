@@ -10,7 +10,7 @@ import SPFKBase
 /// Stored on PlaylistElement and persisted to JSON so edits survive app restarts.
 /// Cleared to nil after the edit is rendered and written to disk.
 ///
-/// Operations are applied in pipeline order: trim → channels → time/pitch → normalize → fade.
+/// Operations are applied in pipeline order: trim → channels → reverse → time/pitch → normalize → fade.
 public struct AudioEditDescription: Equatable, Sendable {
     // MARK: - Trim
 
@@ -21,6 +21,11 @@ public struct AudioEditDescription: Equatable, Sendable {
 
     /// A stereo channel operation, applied after the trim.
     public var channels: ChannelOperation = .none
+
+    // MARK: - Reverse
+
+    /// Reverses the whole trimmed window, after the channel operation and before the stretch.
+    public var isReversed = false
 
     // MARK: - Time/pitch
 
@@ -41,7 +46,7 @@ public struct AudioEditDescription: Equatable, Sendable {
 
     /// True when no edit operations are set — the description is a no-op.
     public var isEmpty: Bool {
-        trim.isEmpty && channels == .none && normalize.isEmpty && fade.isEmpty && timePitch.isEmpty
+        trim.isEmpty && channels == .none && !isReversed && normalize.isEmpty && fade.isEmpty && timePitch.isEmpty
     }
 
     /// True when a render of this edit can exceed 0 dBFS from something other than a normalize the
@@ -53,12 +58,14 @@ public struct AudioEditDescription: Equatable, Sendable {
     public init(
         trim: TrimDescription = TrimDescription(),
         channels: ChannelOperation = .none,
+        isReversed: Bool = false,
         normalize: NormalizeDescription = NormalizeDescription(),
         fade: FadeDescription = FadeDescription(),
         timePitch: TimePitchDescription = TimePitchDescription()
     ) {
         self.trim = trim
         self.channels = channels
+        self.isReversed = isReversed
         self.normalize = normalize
         self.fade = fade
         self.timePitch = timePitch
@@ -69,13 +76,14 @@ public struct AudioEditDescription: Equatable, Sendable {
 
 extension AudioEditDescription: Codable {
     private enum CodingKeys: String, CodingKey {
-        case trim, channels, normalize, fade, timePitch
+        case trim, channels, isReversed, normalize, fade, timePitch
     }
 
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         trim = try c.decodeIfPresent(TrimDescription.self, forKey: .trim) ?? TrimDescription()
         channels = try c.decodeIfPresent(ChannelOperation.self, forKey: .channels) ?? .none
+        isReversed = try c.decodeIfPresent(Bool.self, forKey: .isReversed) ?? false
         normalize = try c.decodeIfPresent(NormalizeDescription.self, forKey: .normalize) ?? NormalizeDescription()
         fade = try c.decodeIfPresent(FadeDescription.self, forKey: .fade) ?? FadeDescription()
         timePitch = try c.decodeIfPresent(TimePitchDescription.self, forKey: .timePitch) ?? TimePitchDescription()
