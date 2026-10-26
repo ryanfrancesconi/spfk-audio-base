@@ -1,5 +1,6 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-audio-base
 
+import Accelerate
 import AVFoundation
 import Foundation
 import SPFKBase
@@ -17,6 +18,7 @@ import SPFKBase
 public struct AudioFileScanner: Sendable {
     private let bufferDuration: TimeInterval
     private let minimumDuration: TimeInterval?
+    private let mixesToMono: Bool
     private var sendPeriodicProgressEvery: UInt32
     private let eventHandler: AudioFileScannerEventHandler
 
@@ -28,15 +30,19 @@ public struct AudioFileScanner: Sendable {
     ///     between ``AudioFileScannerEvent/periodicProgress(url:value:)`` events.
     ///   - minimumDuration: When non-nil and the file is shorter than half this value,
     ///     the scanner loops by seeking back to frame 0 until the target duration is reached.
+    ///   - mixesToMono: Delivers the mean of every channel as one channel, with a mono `format`,
+    ///     so content panned away from channel 0 is still heard.
     ///   - eventHandler: Async callback that receives scanner events.
     public init(
         bufferDuration: TimeInterval = 0.2,
         sendPeriodicProgressEvery: TimeInterval = 4,
         minimumDuration: TimeInterval? = nil,
+        mixesToMono: Bool = true,
         eventHandler: @escaping AudioFileScannerEventHandler
     ) {
         self.bufferDuration = max(0.1, bufferDuration)
         self.minimumDuration = minimumDuration
+        self.mixesToMono = mixesToMono
         self.sendPeriodicProgressEvery = UInt32(max(1, sendPeriodicProgressEvery))
         self.eventHandler = eventHandler
     }
@@ -111,8 +117,39 @@ public struct AudioFileScanner: Sendable {
             await eventHandler(.progress(url: url, value: progress))
         }
 
+        let channelCount = Int(pcmFormat.channelCount)
+        let monoBuffer: AVAudioPCMBuffer? = if mixesToMono, channelCount > 1 {
+            AVAudioFormat(standardFormatWithSampleRate: pcmFormat.sampleRate, channels: 1).flatMap {
+                AVAudioPCMBuffer(pcmFormat: $0, frameCapacity: nominalFramesPerBuffer)
+            }
+        } else {
+            nil
+        }
+
+        if mixesToMono, channelCount > 1, monoBuffer == nil {
+            throw NSError(description: "Unable to create mono buffer")
+        }
+
         func send(samples: UnsafePointer<UnsafeMutablePointer<Float>>, length: AVAudioFrameCount) async {
-            await eventHandler(.data(format: pcmFormat, length: length, samples: samples))
+            guard let monoBuffer, let mono = monoBuffer.floatChannelData?[0] else {
+                await eventHandler(.data(format: pcmFormat, length: length, samples: samples))
+                return
+            }
+
+            let count = vDSP_Length(length)
+            vDSP_vclr(mono, 1, count)
+
+            for channel in 0 ..< channelCount {
+                vDSP_vadd(mono, 1, samples[channel], 1, mono, 1, count)
+            }
+
+            var scale = 1 / Float(channelCount)
+            vDSP_vsmul(mono, 1, &scale, mono, 1, count)
+            monoBuffer.frameLength = length
+
+            if let monoChannels = monoBuffer.floatChannelData {
+                await eventHandler(.data(format: monoBuffer.format, length: length, samples: UnsafePointer(monoChannels)))
+            }
         }
 
         while currentFrame < targetFrames {
