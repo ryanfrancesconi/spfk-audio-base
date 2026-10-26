@@ -6,9 +6,9 @@ import SwiftExtensions
 extension AudioComponentDescription {
     /// Final Cut Pro creates a single id from these values for its Audio Units
     public var uid: String {
-        let type = String(format: "%02x", componentType)
-        let subType = String(format: "%02x", componentSubType)
-        let manufacturer = String(format: "%02x", componentManufacturer)
+        let type = String(format: "%08x", componentType)
+        let subType = String(format: "%08x", componentSubType)
+        let manufacturer = String(format: "%08x", componentManufacturer)
 
         return type + subType + manufacturer
     }

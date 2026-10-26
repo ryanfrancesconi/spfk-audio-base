@@ -144,4 +144,19 @@ struct AudioComponentDescriptionTests {
         #expect(AudioComponentDescription(uid: "short") == nil)
         #expect(AudioComponentDescription(uid: "zzzzzzzzzzzzzzzzzzzzzzzz") == nil)
     }
+
+    @Test("uid round-trips a code below 0x10000000")
+    func uidRoundTripSmallCode() throws {
+        let original = AudioComponentDescription(
+            componentType: kAudioUnitType_Effect,
+            componentSubType: 0x0000_0042,
+            componentManufacturer: 0x0123_4567,
+            componentFlags: 0,
+            componentFlagsMask: 0
+        )
+
+        let restored = try #require(AudioComponentDescription(uid: original.uid))
+        #expect(restored.componentSubType == original.componentSubType)
+        #expect(restored.componentManufacturer == original.componentManufacturer)
+    }
 }
