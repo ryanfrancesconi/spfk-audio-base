@@ -2,11 +2,12 @@
 
 import Foundation
 
-/// The ways a key is written into a file's key tag by the tools that write one.
-public enum MusicalKeyNotation: Sendable, Hashable, Equatable, CaseIterable {
-    /// `"C# Minor"`, as key detection writes it.
+/// The ways a key is written into a file's key tag by the tools that write one. The raw values
+/// are persisted.
+public enum MusicalKeyNotation: String, Sendable, Hashable, Equatable, CaseIterable {
+    /// `"C# Minor"`, `"Db Major"`, and `"A"` for a root alone.
     case standard
-    /// `"C#m"`, `"Dbm"`, `"A"`: the ID3v2.4 `TKEY` form, at most three characters.
+    /// `"C#m"`, `"Dbmaj"`, and `"A"` for a root alone; at most five characters.
     case short
     /// `"8A"`, `"12B"`: Mixed In Key's wheel, A minor and B major.
     case camelot
@@ -25,6 +26,17 @@ public struct ParsedMusicalKey: Sendable, Hashable, Equatable {
         self.value = value
         self.notation = notation
         self.usesFlats = usesFlats
+    }
+
+    /// Flats as the source spelled the note; a wheel source, which spells none, takes the key
+    /// signature's.
+    public var spellsWithFlats: Bool {
+        notation == .camelot || notation == .openKey ? value.signatureUsesFlats : usesFlats
+    }
+
+    /// The key written in `notation`, keeping the source's spelling (``spellsWithFlats``).
+    public func string(in notation: MusicalKeyNotation, glyphs: Bool = false) -> String? {
+        value.string(in: notation, flats: spellsWithFlats, glyphs: glyphs)
     }
 }
 

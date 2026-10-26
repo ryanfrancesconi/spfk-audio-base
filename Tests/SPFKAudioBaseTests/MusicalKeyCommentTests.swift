@@ -2,11 +2,12 @@
 
 import Foundation
 import SPFKBase
+import SPFKTesting
 import Testing
 
 @testable import SPFKAudioBase
 
-@Suite("MusicalKeyValue comment fallback")
+@Suite("MusicalKeyValue comment fallback", .tags(.musicalKey))
 struct MusicalKeyCommentTests {
     @Test(arguments: [
         ("8A - Energy 6", "Am", "Energy 6"),
@@ -16,16 +17,18 @@ struct MusicalKeyCommentTests {
         ("8A Energy 6", "Am", "Energy 6"),
         ("C Minor - Energy 5", "Cm", "Energy 5"),
         ("Dbm,take 2", "Dbm", "take 2"),
-        ("  12B  ", "E", ""),
+        ("  12B  ", "Emaj", ""),
         ("A - Energy 4", "A", "Energy 4"),
+        ("10A – Feel the Vibe", "Bm", "Feel the Vibe"),
+        ("Am — Energy", "Am", "Energy"),
     ])
     func aLeadingKeyParses(comment: String, short: String, remainder: String) throws {
         let leading = try #require(MusicalKeyValue.parseLeading(comment: comment))
-        #expect(leading.key.value.string(in: .short, flats: leading.key.usesFlats) == short)
+        #expect(leading.key.string(in: .short) == short)
         #expect(String(comment[leading.range.upperBound...]) == remainder)
     }
 
-    @Test(arguments: ["Recorded in 8A", "A good take", "Amazing", "Am I right", "8A-Energy 6", "", "Energy 6 - 8A", "C#m energy"])
+    @Test(arguments: ["Recorded in 8A", "A good take", "Amazing", "Am I right", "8A-Energy 6", "8A–Energy 6", "", "Energy 6 - 8A", "C#m energy"])
     func aKeyNotAtTheStartDoesNotParse(comment: String) {
         #expect(MusicalKeyValue.parseLeading(comment: comment) == nil)
     }

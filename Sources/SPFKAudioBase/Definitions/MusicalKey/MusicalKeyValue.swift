@@ -3,9 +3,8 @@
 import Foundation
 import SPFKBase
 
-/// A detected musical key as a note name and tonality pair, covering all 24 major and minor
-/// keys. Round-trips through the pipeline's numeric key index and through a display string such
-/// as `"C# Minor"`.
+/// A musical key as a note name and tonality pair: the 24 major and minor keys, or a root alone
+/// when the tonality is `.unknown`. Round-trips through the pipeline's numeric key index.
 public struct MusicalKeyValue: Sendable, Hashable, Equatable, CustomStringConvertible {
     public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.name == rhs.name && lhs.tonality == rhs.tonality
@@ -49,19 +48,6 @@ public struct MusicalKeyValue: Sendable, Hashable, Equatable, CustomStringConver
     public init(name: NoteName, tonality: MusicalTonality) {
         self.name = name
         self.tonality = tonality
-    }
-
-    /// Parses a display string such as `"C Major"`, returning `nil` for anything not in
-    /// `"<NoteName> <Tonality>"` form.
-    public init?(string: String) {
-        let parts = string.components(separatedBy: " ").map(\.trimmed)
-
-        guard parts.count == 2 else { return nil }
-
-        guard let name = NoteName(string: parts[0]) else { return nil }
-        guard let tonality = MusicalTonality(string: parts[1]) else { return nil }
-
-        self = .init(name: name, tonality: tonality)
     }
 }
 

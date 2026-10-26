@@ -2,11 +2,12 @@
 
 import Foundation
 import SPFKBase
+import SPFKTesting
 import Testing
 
 @testable import SPFKAudioBase
 
-@Suite("MusicalKeyValue")
+@Suite("MusicalKeyValue", .tags(.musicalKey))
 struct MusicalKeyValueTests {
     @Test("Major keys have correct tonality", arguments: 0 ..< 12)
     func keyIndexMajorTonality(index: Int) {
@@ -50,25 +51,6 @@ struct MusicalKeyValueTests {
     func specificKeyIndices(index: Int, name: NoteName, tonality: MusicalTonality) {
         let key = MusicalKeyValue(keyIndex: Int32(index))
         #expect(key == MusicalKeyValue(name: name, tonality: tonality))
-    }
-
-    // MARK: - String init
-
-    @Test(
-        "Valid strings parse correctly",
-        arguments: [
-            ("C Major", NoteName.c, MusicalTonality.major),
-            ("A Minor", NoteName.a, MusicalTonality.minor),
-            ("F# Major", NoteName.fSharp, MusicalTonality.major),
-        ]
-    )
-    func stringInitValid(string: String, name: NoteName, tonality: MusicalTonality) {
-        #expect(MusicalKeyValue(string: string) == MusicalKeyValue(name: name, tonality: tonality))
-    }
-
-    @Test("Invalid strings return nil", arguments: ["", "CMajor", "C Major Extra", "Z Major", "C Diminished"])
-    func stringInitInvalid(string: String) {
-        #expect(MusicalKeyValue(string: string) == nil)
     }
 
     // MARK: - description
@@ -179,11 +161,10 @@ struct MusicalKeyValueTests {
 
     // MARK: - Description round-trip
 
-    @Test("Description round-trips through string init", arguments: 0 ..< 24)
+    @Test("Description round-trips through parse", arguments: 0 ..< 24)
     func descriptionRoundTrip(index: Int) throws {
         let key = try #require(MusicalKeyValue(keyIndex: Int32(index)))
-        let parsed = MusicalKeyValue(string: key.description)
-        #expect(parsed == key)
+        #expect(MusicalKeyValue.parse(key.description)?.value == key)
     }
 
     // MARK: - Unknown tonality

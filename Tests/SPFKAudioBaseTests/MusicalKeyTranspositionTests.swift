@@ -3,9 +3,10 @@
 import Foundation
 import SPFKAudioBase
 import SPFKBase
+import SPFKTesting
 import Testing
 
-@Suite("MusicalKeyValue.nearestTransposition(to:)")
+@Suite("MusicalKeyValue.nearestTransposition(to:)", .tags(.musicalKey))
 struct MusicalKeyTranspositionTests {
     @Test(arguments: [MusicalTonality.major, .minor])
     func everyTonicPairInOneModeTakesTheSmallestShift(tonality: MusicalTonality) throws {

@@ -6,7 +6,7 @@ extension MusicalKeyValue {
     /// Reads a key written at the very start of a comment, as Mixed In Key can write one
     /// (`"8A - Energy 6"`).
     ///
-    /// The key must be followed by the end of the comment, `" - "`, `"/"` or `","`. A Camelot or
+    /// The key must be followed by the end of the comment, `" - "` (or an en or em dash), `"/"` or `","`. A Camelot or
     /// Open Key code may also be followed by whitespace and more words; a note name may not, so
     /// `"A good take"` is not a key. `range` covers the key and its separator, and is what
     /// removing the key from the comment removes.
@@ -52,7 +52,8 @@ extension MusicalKeyValue {
         return ResolvedMusicalKey(key: leading.key, source: .comment(remainder: remainder))
     }
 
-    private static let separators: Set<Character> = ["-", "/", ","]
+    private static let dashes: Set<Character> = ["-", "–", "—"]
+    private static let separators: Set<Character> = dashes.union(["/", ","])
 
     /// A run of characters up to whitespace, `/` or `,`.
     private static func token(in text: String, from start: String.Index) -> Range<String.Index> {
@@ -72,8 +73,8 @@ extension MusicalKeyValue {
         let next = text[afterSpace]
 
         if separators.contains(next) {
-            // A hyphen separates only with space before it, as in " - ".
-            guard next != "-" || afterSpace > index else { return nil }
+            // A dash separates only with space before it, as in " - ".
+            guard !dashes.contains(next) || afterSpace > index else { return nil }
 
             let rest = text.index(after: afterSpace)
             return text[rest...].firstIndex { !$0.isWhitespace } ?? text.endIndex

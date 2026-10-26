@@ -22,8 +22,9 @@ extension MusicalKeyValue {
 
     /// Reads a key in any `MusicalKeyNotation`, ignoring case and surrounding whitespace.
     ///
-    /// `♯`/`♭` read as `#`/`b`; "m", "min" and "minor" mark a minor key, "maj" and "major" (or
-    /// nothing) a major one. Returns nil for anything else, including ID3's `"o"` (off key).
+    /// `♯`/`♭` read as `#`/`b`; "m", "min" and "minor" mark a minor key, "maj" and "major" a major
+    /// one, and a bare note is a root of `.unknown` tonality. Returns nil for anything else,
+    /// including ID3's `"o"` (off key).
     public static func parse(_ string: String) -> ParsedMusicalKey? {
         let text = string.trimmingCharacters(in: .whitespacesAndNewlines)
             .replacingOccurrences(of: "♯", with: "#")
@@ -38,23 +39,47 @@ extension MusicalKeyValue {
         return parseNoteName(text)
     }
 
-    /// The key written in `notation`. A note-name notation spells accidentals as flats when
-    /// `flats` is true. A key of `.unknown` tonality is no key, and formats as an empty string.
-    public func string(in notation: MusicalKeyNotation, flats: Bool = false) -> String {
-        guard tonality != .unknown else { return "" }
+    /// The key written in `notation`, spelling accidentals as flats when `flats` is true and as
+    /// `♯`/`♭` when `glyphs` is true. A root of `.unknown` tonality is the note alone, and nil in a
+    /// wheel notation, which cannot express it.
+    public func string(in notation: MusicalKeyNotation, flats: Bool, glyphs: Bool = false) -> String? {
+        var note = flats ? name.enharmonic : name.description
 
-        let note = flats ? name.enharmonic : name.description
-        let isMinor = tonality == .minor
+        if glyphs {
+            note = note.replacingOccurrences(of: "#", with: "♯").replacingOccurrences(of: "b", with: "♭")
+        }
 
-        switch notation {
-        case .standard:
+        switch (notation, tonality) {
+        case (.camelot, .unknown), (.openKey, .unknown):
+            return nil
+        case (_, .unknown):
+            return note
+        case (.standard, _):
             return "\(note) \(tonality)"
-        case .short:
-            return isMinor ? "\(note)m" : note
-        case .camelot:
-            return "\(camelotNumber)\(isMinor ? "A" : "B")"
-        case .openKey:
-            return "\(openKeyNumber)\(isMinor ? "m" : "d")"
+        case (.short, _):
+            return tonality == .minor ? "\(note)m" : "\(note)maj"
+        case (.camelot, _):
+            return "\(camelotNumber)\(tonality == .minor ? "A" : "B")"
+        case (.openKey, _):
+            return "\(openKeyNumber)\(tonality == .minor ? "m" : "d")"
+        }
+    }
+
+    /// The key written in `notation`, spelled as its key signature (``signatureUsesFlats``).
+    public func string(in notation: MusicalKeyNotation, glyphs: Bool = false) -> String? {
+        string(in: notation, flats: signatureUsesFlats, glyphs: glyphs)
+    }
+
+    /// Whether the key signature with the fewest accidentals is in flats: Db, Eb, Ab, Bb and Bbm.
+    /// The ties, F#/Gb and D#m/Ebm, take sharps, as does a root of `.unknown` tonality.
+    public var signatureUsesFlats: Bool {
+        switch tonality {
+        case .major:
+            [.cSharp, .dSharp, .gSharp, .aSharp].contains(name)
+        case .minor:
+            name == .aSharp
+        case .unknown:
+            false
         }
     }
 }
@@ -115,7 +140,7 @@ extension MusicalKeyValue {
 
 extension MusicalKeyValue {
     private static let minorSuffixes: Set<String> = ["m", "min", "minor"]
-    private static let majorSuffixes: Set<String> = ["", "maj", "major"]
+    private static let majorSuffixes: Set<String> = ["maj", "major"]
     /// The words that may follow a note name as a second word, as in `"C Minor"`.
     static let tonalityWords: Set<String> = ["maj", "major", "min", "minor"]
 
@@ -134,7 +159,9 @@ extension MusicalKeyValue {
         let suffix = rest.trimmingCharacters(in: .whitespaces).lowercased()
 
         let tonality: MusicalTonality
-        if minorSuffixes.contains(suffix) {
+        if suffix.isEmpty {
+            tonality = .unknown
+        } else if minorSuffixes.contains(suffix) {
             tonality = .minor
         } else if majorSuffixes.contains(suffix) {
             tonality = .major

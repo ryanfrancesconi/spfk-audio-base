@@ -2,11 +2,12 @@
 
 import Foundation
 import SPFKBase
+import SPFKTesting
 import Testing
 
 @testable import SPFKAudioBase
 
-@Suite("MusicalKeyNotation")
+@Suite("MusicalKeyNotation", .tags(.musicalKey))
 struct MusicalKeyNotationTests {
     struct Row: Sendable, CustomTestStringConvertible {
         let key: MusicalKeyValue
@@ -60,15 +61,15 @@ struct MusicalKeyNotationTests {
     @Test(arguments: wheel)
     func relativeKeysShareANumber(row: Row) {
         let relative = row.key.relativeKey
-        #expect(relative.string(in: .camelot).dropLast() == row.camelot.dropLast())
-        #expect(relative.string(in: .openKey).dropLast() == row.openKey.dropLast())
+        #expect(relative.string(in: .camelot)?.dropLast() == row.camelot.dropLast())
+        #expect(relative.string(in: .openKey)?.dropLast() == row.openKey.dropLast())
     }
 
     @Test(arguments: wheel)
-    func everyNotationRoundTrips(row: Row) {
+    func everyNotationRoundTrips(row: Row) throws {
         for notation in MusicalKeyNotation.allCases {
             for flats in [false, true] {
-                let text = row.key.string(in: notation, flats: flats)
+                let text = try #require(row.key.string(in: notation, flats: flats))
                 let parsed = MusicalKeyValue.parse(text)
                 let spellsFlat = flats && row.key.name.enharmonic != row.key.name.description
                     && (notation == .standard || notation == .short)
@@ -79,9 +80,9 @@ struct MusicalKeyNotationTests {
     }
 
     @Test(arguments: wheel)
-    func theShortFormFitsTKEY(row: Row) {
-        #expect(row.key.string(in: .short).count <= 3)
-        #expect(row.key.string(in: .short, flats: true).count <= 3)
+    func theShortFormIsAtMostFiveCharacters(row: Row) throws {
+        #expect(try #require(row.key.string(in: .short, flats: false)).count <= 5)
+        #expect(try #require(row.key.string(in: .short, flats: true)).count <= 5)
     }
 
     @Test(arguments: [
@@ -94,28 +95,86 @@ struct MusicalKeyNotationTests {
         ("bb", "Bb", .short, true),
         ("Bm", "Bm", .short, false),
         ("A", "A", .short, false),
-        ("a maj", "A", .short, false),
-        ("Amaj", "A", .short, false),
-        ("F MAJOR", "F", .standard, false),
+        ("a maj", "Amaj", .short, false),
+        ("Amaj", "Amaj", .short, false),
+        ("F MAJOR", "Fmaj", .standard, false),
         ("gminor", "Gm", .short, false),
+        ("AM", "Am", .short, false),
+        ("C#M", "C#m", .short, false),
         ("12a", "C#m", .camelot, false),
-        ("1D", "C", .openKey, false),
+        ("1D", "Cmaj", .openKey, false),
     ])
     func acceptedVariantsParse(text: String, short: String, notation: MusicalKeyNotation, flats: Bool) throws {
         let parsed = try #require(MusicalKeyValue.parse(text))
         #expect(parsed.notation == notation)
         #expect(parsed.usesFlats == flats)
-        #expect(parsed.value.string(in: .short, flats: parsed.usesFlats) == short)
+        #expect(parsed.string(in: .short) == short)
     }
 
-    @Test(arguments: ["", "  ", "13A", "0d", "0A", "123B", "H", "Hm", "o", "Cb", "E#", "Amazing", "C Diminished", "8C", "C Major Extra"])
+    @Test(arguments: ["", "  ", "13A", "0d", "0A", "123B", "H", "Hm", "o", "Cb", "E#", "Amazing", "C Diminished", "8C", "C Major Extra", "B\u{1D12C}", "B\u{1D12B}m"])
     func malformedInputIsNil(text: String) {
         #expect(MusicalKeyValue.parse(text) == nil)
     }
 
-    @Test func theStandardParseStaysStandardOnly() {
-        #expect(MusicalKeyValue(string: "C#m") == nil)
-        #expect(MusicalKeyValue(string: "C# Minor") == MusicalKeyValue(name: .cSharp, tonality: .minor))
+    @Test(arguments: ["A", "f#", "Db", "B♭"])
+    func aBareNoteIsARootAlone(text: String) throws {
+        #expect(try #require(MusicalKeyValue.parse(text)).value.tonality == .unknown)
+    }
+
+    @Test func aRootAloneIsTheNoteInANoteNameNotationAndNothingOnAWheel() {
+        let key = MusicalKeyValue(name: .fSharp, tonality: .unknown)
+        #expect(key.string(in: .standard) == "F#")
+        #expect(key.string(in: .short) == "F#")
+        #expect(key.string(in: .camelot) == nil)
+        #expect(key.string(in: .openKey) == nil)
+    }
+
+    // MARK: - Spelling
+
+    /// Key-signature theory: the fewest accidentals, with the F#/Gb and D#m/Ebm ties in sharps.
+    static let signatureSpellings: [String: String] = [
+        "8B": "Cmaj", "3B": "Dbmaj", "10B": "Dmaj", "5B": "Ebmaj", "12B": "Emaj", "7B": "Fmaj",
+        "2B": "F#maj", "9B": "Gmaj", "4B": "Abmaj", "11B": "Amaj", "6B": "Bbmaj", "1B": "Bmaj",
+        "5A": "Cm", "12A": "C#m", "7A": "Dm", "2A": "D#m", "9A": "Em", "4A": "Fm",
+        "11A": "F#m", "6A": "Gm", "1A": "G#m", "8A": "Am", "3A": "Bbm", "10A": "Bm",
+    ]
+
+    @Test(arguments: wheel)
+    func aWheelKeyIsSpelledAsItsSignature(row: Row) throws {
+        let expected = try #require(Self.signatureSpellings[row.camelot])
+        #expect(try #require(MusicalKeyValue.parse(row.camelot)).string(in: .short) == expected)
+        #expect(try #require(MusicalKeyValue.parse(row.openKey)).string(in: .short) == expected)
+        #expect(row.key.string(in: .short) == expected)
+    }
+
+    @Test(arguments: ["Dbm", "C#m", "G#maj", "Ebmaj", "D#maj", "Gb"])
+    func aWrittenSpellingIsKept(text: String) throws {
+        #expect(try #require(MusicalKeyValue.parse(text)).string(in: .short) == text)
+    }
+
+    @Test(arguments: [
+        ("B♭", "Bb", "Bb"),
+        ("B♭ Minor", "Bbm", "Bb Minor"),
+        ("B♭maj", "Bbmaj", "Bb Major"),
+        ("C♯m", "C#m", "C# Minor"),
+    ])
+    func typedGlyphsAreWrittenInASCII(text: String, short: String, standard: String) throws {
+        let parsed = try #require(MusicalKeyValue.parse(text))
+        #expect(parsed.string(in: .short) == short)
+        #expect(parsed.string(in: .standard) == standard)
+
+        for notation in MusicalKeyNotation.allCases {
+            let written = parsed.string(in: notation) ?? ""
+            #expect(!written.contains("♭") && !written.contains("♯"), "\(written)")
+        }
+    }
+
+    @Test func glyphsAreOnlyForDisplay() throws {
+        let parsed = try #require(MusicalKeyValue.parse("Bbm"))
+        #expect(parsed.string(in: .short, glyphs: true) == "B♭m")
+        #expect(MusicalKeyValue(name: .cSharp, tonality: .minor).string(in: .standard, glyphs: true) == "C♯ Minor")
+        #expect(MusicalKeyValue(name: .b, tonality: .major).string(in: .short, glyphs: true) == "Bmaj")
+        #expect(MusicalKeyValue(name: .a, tonality: .minor).string(in: .camelot, glyphs: true) == "8A")
     }
 
     // MARK: - Transposition
@@ -136,19 +195,28 @@ struct MusicalKeyNotationTests {
 
     @Test func aTransposedCamelotTagIsWrittenShort() throws {
         let parsed = try #require(MusicalKeyValue.parse("8A"))
-        #expect(parsed.value.transposed(bySemitones: 2).string(in: .short, flats: parsed.usesFlats) == "Bm")
+        #expect(parsed.value.transposed(bySemitones: 2).string(in: .short) == "Bm")
     }
 
-    @Test func aFlatSpellingSurvivesTransposition() throws {
-        let parsed = try #require(MusicalKeyValue.parse("Dbm"))
-        #expect(parsed.value.transposed(bySemitones: 2).string(in: .short, flats: parsed.usesFlats) == "Ebm")
-        #expect(parsed.value.transposed(bySemitones: -1).string(in: .short, flats: parsed.usesFlats) == "Cm")
+    @Test(arguments: [
+        ("E", 4, "G#"),
+        ("Emaj", 4, "Abmaj"),
+        ("Dbm", 2, "D#m"),
+        ("Dbm", -1, "Cm"),
+        ("C#m", 1, "Dm"),
+        ("Amaj", 1, "Bbmaj"),
+        ("Am", 1, "Bbm"),
+        ("F#maj", 0, "F#maj"),
+    ])
+    func aTranspositionIsSpelledAsItsSignature(text: String, semitones: Int, expected: String) throws {
+        let parsed = try #require(MusicalKeyValue.parse(text))
+        #expect(parsed.value.transposed(bySemitones: semitones).string(in: .short) == expected)
     }
 
-    @Test func anUnknownTonalityIsNoKey() {
-        let key = MusicalKeyValue(name: .c, tonality: .unknown)
-        for notation in MusicalKeyNotation.allCases {
-            #expect(key.string(in: notation).isEmpty)
-        }
+    @Test func aRootAloneStaysARootAloneWhenTransposed() throws {
+        let parsed = try #require(MusicalKeyValue.parse("Bb"))
+        let transposed = parsed.value.transposed(bySemitones: 2)
+        #expect(transposed.tonality == .unknown)
+        #expect(transposed.string(in: .standard) == "C")
     }
 }
