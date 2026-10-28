@@ -17,6 +17,20 @@ public enum MarkerStorage: Sendable, Hashable {
     case xiphChapters
     /// Core Audio's marker list, which a metadata save does not write.
     case coreAudio
+
+    /// The most markers the format can hold and read back; nil when its count field sets no
+    /// practical limit.
+    public var maximumMarkerCount: Int? {
+        switch self {
+        // ID3v2 `CTOC` stores its entry count in one byte.
+        case .id3Chapters: 255
+        // `CHAPTER000` to `CHAPTER999`.
+        case .xiphChapters: 1000
+        // `MARK` stores its count and each marker ID as a signed 16-bit value.
+        case .aiffMarks: 32767
+        case .riffCues, .mp4Chapters, .coreAudio: nil
+        }
+    }
 }
 
 extension AudioFileType {
