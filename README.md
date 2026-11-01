@@ -3,146 +3,30 @@
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-audio-base%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ryanfrancesconi/spfk-audio-base)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-audio-base%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/ryanfrancesconi/spfk-audio-base)
 
-Shared audio types, AVFoundation extensions and processing utilities for the SPFK package ecosystem
-— the foundational layer under [spfk-tempo](https://github.com/ryanfrancesconi/spfk-tempo),
-[spfk-loudness](https://github.com/ryanfrancesconi/spfk-loudness),
-[spfk-musical-analysis](https://github.com/ryanfrancesconi/spfk-musical-analysis) and the rest.
+Support vocabulary for the audio packages: the types, extensions and small utilities they all share,
+so that two packages describing the same thing describe it the same way. Nothing uses it on its own.
+It is transitive in every audio package and in both products.
 
-## Requirements
+What belongs here is anything more than one package needs to agree on and nobody owns outright: the
+audio file formats and what each can store, musical values such as tempo and key, loudness results,
+the description of a pending edit (trim, channels, reverse, time and pitch, normalize, fade),
+automation curves and the timeline they play against, conversion options, the persisted shape of an
+effects chain, and AVFoundation conveniences. An edit is described here, rendered by
+spfk-audio-conversion and played by spfk-audio-nodes, so a pending edit can be stored with a file
+and survive a relaunch.
 
-- **Platforms:** macOS 13+, iOS 16+
-- **Swift:** 6.2+
+The arithmetic that has to be identical on and off the render thread, such as fade tapers and
+automation curves, is in a small C target, `SPFKAudioBaseC`, so real-time code evaluates exactly
+what the Swift side draws and exports.
 
-## Core types
+Measuring belongs to spfk-loudness, spfk-tempo and spfk-musical-analysis; decoding and writing to
+spfk-audio-conversion; metadata to spfk-metadata; anything below audio to spfk-base.
 
-| Type | Description |
-|------|-------------|
-| **`AudioFileType`** | Every audio format the products handle, with its Core Audio, `UTType` and MIME mappings |
-| **`Bpm`** | A tempo in beats per minute, with octave-equivalent matching and a tolerance |
-| **`LoudnessDescription`** | EBU R128 metrics — integrated, range, true peak, max momentary and short-term — with averaging across files |
-| **`NoteName`** / **`MusicalTonality`** | Chromatic note names with enharmonics, and major/minor |
-| **`MusicalKeyValue`** | A key as a note name and tonality, with its relative key and transposition. Reads and writes the standard ("C# Minor"), short ("C#m"), Camelot ("8A") and Open Key ("1m") notations, and a key leading a comment |
-| **`CountableResult`** | Consensus voting for iterative analysis, with early exit once a value reaches the required number of matches |
-| **`BufferPeak`** | A peak measurement over a buffer |
-| **`AudioTaper`** | The shape of a fade or gain ramp |
-| **`RealTimeDomain`** | Time display strings, and parsing them back |
-| **`AudioDefaults`** | The system audio format, as an actor |
-| **`AudioTerminology`** | One spelling for each audio quantity — sample rate, bit depth, bit rate, channel count — localized where it is a word |
+## Matroska
 
-### AudioFileType capability
-
-Capability is answered per question rather than by one "supported" flag, because the answers
-genuinely differ by format — `supportsMetadata`, `supportsXMP`, `supportsBEXT`, `supportsIXML`,
-`supportsMarkerWrite`, `markerStorage`, `isAVAudioFileWritable`, `isMatroska`.
-
-**`markerStorage` names where each container keeps markers** (`MarkerStorage`): RIFF `cue `/`adtl`,
-AIFF `MARK`, ID3v2 `CHAP`, a QuickTime chapter track, or Vorbis `CHAPTERnnn`, and `nil` where there
-is nowhere to (ADTS `.aac`, Matroska, MXF, `.caf`, `.au`, `.ts`). Every marker read and write
-dispatches on it. `markerWriteTypes` is every format with a `markerStorage` except Core Audio's
-(`.w64`), which a metadata save does not write.
-
-**`isMatroska` covers `.mka`, `.mkv` and `.webm`** (WebM is a Matroska profile, so one parser
-serves all three). These are the formats absent from `AVURLAsset.audiovisualTypes()`, where
-`AVAudioFile(forReading:)` throws `'fmt?'` — so any AV-backed read returns nothing and a caller
-has to route to the demuxer in
-[spfk-matroska](https://github.com/ryanfrancesconi/spfk-matroska) instead. Metadata is unaffected
-by that limit, which is why they are in `metadataTypes` while having no `avFileType`.
-
-### AudioTaper
-
-`value` sets the curvature exponent and `skew` blends that power curve with its own inverse,
-concave against convex. Every consumer — PCM buffer fading, parameter automation, and the drawn
-overlay — evaluates the same gain function, so a fade renders as it was auditioned. That function
-is `spfk_taper_gain`, a header-only C function in the `SPFKAudioBaseC` product, so render-thread
-code calls it directly. Use the named presets rather than raw values; the two properties are only
-meaningful together.
-
-## Edits
-
-Non-destructive edits are described here and rendered elsewhere, so a pending edit can be persisted
-with the element and survive a relaunch.
-
-| Type | Description |
-|------|-------------|
-| **`AudioEditDescription`** | The pending edits on a file. Applied in pipeline order: trim, normalize, fade |
-| **`FadeDescription`** | In and out times, and the taper each uses. `curve(regionDuration:maximumGain:)` is its gain as a `ParameterCurve`, which the render and playback both evaluate |
-| **`NormalizeDescription`** / **`NormalizeMode`** / **`NormalizeOptions`** | Target level and how it is measured |
-
-A `nil` description means no edits are queued, and one with all-default values is functionally the
-same thing. It is cleared once the edit has been rendered and written.
-
-## Automation values
-
-| Type | Description |
-|------|-------------|
-| **`ParameterCurve`** | A parameter's automation: ordered `CurveSegment`s in seconds of source time, each with its own start value and `CurveShape` (linear, taper or step). `value(at:)` is the evaluation the render thread runs, and `replacing(range:with:)` merges a recording |
-| **`TimelineMapping`** | Which source position is processed at each render sample: a `TimelineAnchor`, rate, direction and an optional loop that positions wrap into |
-
-Both are evaluated in C (`SPFKCurve.h` in `SPFKAudioBaseC`), so code on the render thread runs the
-same arithmetic as `value(at:)` and `position(atRenderSample:)`.
-
-## Conversion
-
-| Type | Description |
-|------|-------------|
-| **`AudioFormatConverterOptions`** | Format, sample rate, bit depth and bit rate for a conversion. Any property left `nil` adopts the input file's value; `bitRate` states a stereo rate, halved for mono |
-| **`BitDepthRule`** | Whether the converter may go above the source's bit depth |
-| **`MetadataCopyScheme`** | Which metadata categories travel with a conversion |
-| **`PasteAttributesOptions`** | Which sections and which individual fields a Paste Attributes transfers |
-
-`PasteAttributesOptions` has section-level flags plus per-section exclusion sets, so a field can be
-skipped while its section stays on.
-
-## Scanning and detection
-
-| Type | Description |
-|------|-------------|
-| **`AudioFileScanner`** | Streams a file in fixed-size chunks with progress, for analysis engines that work incrementally |
-| **`AudioSilenceScanner`** | Locates silence boundaries and non-silent regions, with a vDSP peak-magnitude fast path that skips silent chunks without per-frame inspection, so memory stays constant whatever the file length |
-| **`SegmentDetector`** / **`SegmentDetectorOptions`** | Non-silent regions as time-ordered trims, with gap bridging, a minimum length and boundary padding |
-| **`AudioTools`** | Looping a file that is too short for an analysis window to have enough material |
-| **`URLProgressEvent`** | Per-file progress from any of the above |
-
-`AudioFileScanner` can loop short files in memory: when a `minimumDuration` is set and the file is
-shorter than half of it, the scanner seeks back to frame 0 rather than ending, giving algorithms
-with a minimum input length enough to work with.
-
-## Playback sources
-
-`SeekablePCMSource` extends `spfk-base`'s `SequentialPCMSource` with exactly one thing: a playhead
-the user can move. Positions are frames of the processing format counted from the start of the
-source.
-
-A conformer holds a position in a file and is emphatically not safe to drive from two places at
-once, so it is expected to be `@unchecked Sendable` with that invariant stated. What the conformance
-buys is that a player can hand one to a feed `Task` — the alternative being a serial dispatch queue,
-which is the GCD this codebase has otherwise removed.
-
-## Audio unit state
-
-`AudioUnitChainState` and `AudioUnitInsert` persist an effects chain — which units, in which order,
-with which saved state — so a workspace reopens with the chain it had.
-
-## AVFoundation extensions
-
-| Extension on | What it adds |
-|------|-------------|
-| **`AVAudioPCMBuffer`** | Duration, RMS, silence check; normalize, reverse, fade, convert and peak; extract a range, loop, append and write |
-| **`AVAudioFile`** | Duration, estimated and accurate data rate, conversion to a buffer (whole or capped) or to float channel data |
-| **`AVAudioFormat`** | A readable description, bits per channel, bit rate, and PCM format construction |
-| **`AudioStreamBasicDescription`** | Source bit depth, including FLAC and Apple Lossless, which state it in the format flags |
-| **`AVAudioEngine`** | Output format, max frames per slice, and safe attach/detach/connect |
-| **`AVAudioNode`** | A resolved name, output-connection check, an ASCII connection diagram, and disconnecting inputs and outputs |
-| **`AudioComponentDescription`** | Identity and a stable UID for an audio unit |
-| **`AUValue`**, **`AVAudioTime`**, **`TimeInterval`** | dB and linear conversion, host time, normalization |
-
-## Dependencies
-
-| Package | Purpose |
-|---------|---------|
-| [spfk-base](https://github.com/ryanfrancesconi/spfk-base) | Core utilities, logging, type extensions |
-| [spfk-filesystem](https://github.com/ryanfrancesconi/spfk-filesystem) | `FileConflictScheme`, stored in `AudioFormatConverterOptions` |
-| [spfk-testing](https://github.com/ryanfrancesconi/spfk-testing) | Test audio resources (test target only) |
+`AudioFileType` lists `.mka`, `.mkv` and `.webm` because their metadata is readable, but
+AVFoundation cannot open them. Check `isMatroska` before any AVFoundation read and route those files
+to spfk-matroska instead.
 
 ## About
 
