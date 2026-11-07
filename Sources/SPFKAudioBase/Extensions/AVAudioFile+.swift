@@ -61,6 +61,35 @@ extension AVAudioFile {
         try write(from: buffer)
     }
 
+    /// Reads up to `frameCount` frames into `chunk`, leaving it empty at the end of the file.
+    ///
+    /// Stops at `length` without reading past it, since what that read returns is not guaranteed:
+    /// `eofErr`, or a failure with no error set. `eofErr` is still treated as the end, for a file
+    /// that holds fewer frames than it declares. Any other failure is thrown as
+    /// ``AudioFileReadError/readFailed(_:framePosition:length:underlying:)``. `framePosition` is
+    /// read inside the trap: `AVAudioFile` raises from it when it has no converter for the format.
+    public func readUpToLength(into chunk: AVAudioPCMBuffer, frameCount: AVAudioFrameCount) throws {
+        var framePosition: AVAudioFramePosition?
+
+        do {
+            try ExceptionTrap.withThrowing {
+                let position = self.framePosition
+                framePosition = position
+
+                guard position < self.length else {
+                    chunk.frameLength = 0
+                    return
+                }
+
+                try self.read(into: chunk, frameCount: frameCount)
+            }
+        } catch let error as NSError where error.domain == NSOSStatusErrorDomain && error.code == eofErr {
+            chunk.frameLength = 0
+        } catch {
+            throw AudioFileReadError.readFailed(url, framePosition: framePosition, length: length, underlying: error)
+        }
+    }
+
     /// converts to a 32 bit PCM buffer
     public func toAVAudioPCMBuffer() throws -> AVAudioPCMBuffer {
         guard
