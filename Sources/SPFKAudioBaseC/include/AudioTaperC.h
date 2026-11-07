@@ -8,7 +8,7 @@
 ///
 /// The one evaluation of a taper: offline rendering and the render thread both call it, so a curve
 /// renders as it plays. Real-time safe. `t` and the result are clamped to [0, 1].
-static inline double spfk_taper_gain(double t, double value, double skew) {
+static inline double taperGain(double t, double value, double skew) {
     if (!(t > 0.0)) t = 0.0;
     if (t > 1.0) t = 1.0;
 

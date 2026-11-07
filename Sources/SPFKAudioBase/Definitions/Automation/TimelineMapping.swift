@@ -119,10 +119,10 @@ public struct TimelineMapping: Equatable, Sendable {
         for change in rateChanges {
             guard let changeSample = change.renderSample(hostSample: hostSample) else { continue }
             guard changeSample < renderSample else { break }
-            mapping = spfk_timeline_fold(&mapping, changeSample, change.rate)
+            mapping = timelineFold(&mapping, changeSample, change.rate)
         }
 
-        return spfk_timeline_position(&mapping, renderSample)
+        return timelinePosition(&mapping, renderSample)
     }
 
     /// The source position at `renderSample`, for a mapping anchored at a ``TimelineAnchor/sample(_:)``;
@@ -133,8 +133,8 @@ public struct TimelineMapping: Equatable, Sendable {
     }
 
     /// The mapping as the render thread reads it, with the anchor bound to `anchorSample`.
-    public func renderMapping(anchorSample: Int64) -> SPFKTimelineMapping {
-        SPFKTimelineMapping(
+    public func renderMapping(anchorSample: Int64) -> TimelineMappingC {
+        TimelineMappingC(
             renderAnchor: anchorSample,
             sourceAnchor: sourceAnchor,
             rate: rate,

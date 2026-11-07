@@ -2,5 +2,6 @@
 
 // The evaluation is header-only; this file gives the target a source to build, and compiles the
 // headers as C.
-#include "SPFKCurve.h"
-#include "SPFKTaper.h"
+#include "AudioTaperC.h"
+#include "CurveSegmentC.h"
+#include "TimelineMappingC.h"

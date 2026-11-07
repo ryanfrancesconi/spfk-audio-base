@@ -8,7 +8,7 @@ import SPFKAudioBaseC
 public enum CurveShape: Codable, Equatable, Sendable {
     case linear
 
-    /// ``AudioTaper``'s exponent and blend weight, evaluated by `spfk_taper_gain`.
+    /// ``AudioTaper``'s exponent and blend weight, evaluated by `taperGain`.
     case taper(value: Double, skew: Double)
 
     /// The start value up to the segment's end, then the end value.
@@ -25,7 +25,7 @@ extension CurveShape {
         return value.isFinite && value > 0 && skew.isFinite
     }
 
-    var kind: SPFKCurveShapeKind {
+    var kind: CurveShapeKindC {
         switch self {
         case .linear: .linear
         case .taper: .taper

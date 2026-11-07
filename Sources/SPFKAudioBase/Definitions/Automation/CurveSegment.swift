@@ -38,7 +38,7 @@ public struct CurveSegment: Codable, Equatable, Sendable {
     /// The segment's value at `position`, held at its ends outside it.
     public func value(at position: Double) -> AUValue {
         var segment = cSegment
-        return AUValue(spfk_curve_segment_value(&segment, position))
+        return AUValue(curveSegmentValue(&segment, position))
     }
 
     var isValid: Bool {
@@ -59,11 +59,11 @@ public struct CurveSegment: Codable, Equatable, Sendable {
         return (left, right)
     }
 
-    var cSegment: SPFKCurveSegment {
+    var cSegment: CurveSegmentC {
         var taper = (value: 1.0, skew: 0.0)
         if case let .taper(value, skew) = shape { taper = (value, skew) }
 
-        return SPFKCurveSegment(
+        return CurveSegmentC(
             start: start,
             end: end,
             shapeStart: shapeRange.lowerBound,

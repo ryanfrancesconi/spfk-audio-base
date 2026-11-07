@@ -163,7 +163,7 @@ struct AudioTaperTests {
             for i in 0 ... 1000 {
                 let x = Double(i) / 1000
                 let closedForm = (1 - k) * (1 - pow(x, 1 / v)) + k * pow(1 - x, v)
-                let descending = 1 - spfk_taper_gain(x, 1 / v, k)
+                let descending = 1 - taperGain(x, 1 / v, k)
 
                 #expect(abs(taper.fadeOutGain(at: x) - closedForm) < 1e-12, "\(taper) at \(x)")
                 #expect(abs(descending - closedForm) < 1e-12, "\(taper) at \(x)")
@@ -178,7 +178,7 @@ struct AudioTaperTests {
             #expect(abs(taper.gain(at: 1.01) - 1) < 1e-12)
             #expect(abs(taper.fadeOutGain(at: -0.01) - 1) < 1e-12)
             #expect(abs(taper.fadeOutGain(at: 1.01)) < 1e-12)
-            #expect(spfk_taper_gain(.nan, Double(taper.value), Double(taper.skew)) == 0)
+            #expect(taperGain(.nan, Double(taper.value), Double(taper.skew)) == 0)
         }
     }
 

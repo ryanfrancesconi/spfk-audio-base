@@ -82,15 +82,15 @@ extension AudioTaper {
 
 extension AudioTaper {
     /// Gain value at normalized position `t` ∈ [0, 1] using the blend formula, through
-    /// `spfk_taper_gain`, the evaluation the render thread shares.
+    /// `taperGain`, the evaluation the render thread shares.
     public func gain(at t: Double) -> Double {
-        spfk_taper_gain(t, Double(value), Double(skew))
+        taperGain(t, Double(value), Double(skew))
     }
 
     /// Gain value at normalized fade-out position `s` ∈ [0, 1] (0 = fade start, 1 = silence).
     /// The descending ramp of the inverse taper: `1 − gain(at: s)` with exponent `1 / value`.
     public func fadeOutGain(at s: Double) -> Double {
-        1 - spfk_taper_gain(s, 1 / Double(value), Double(skew))
+        1 - taperGain(s, 1 / Double(value), Double(skew))
     }
 
     /// Returns a `CGPath` tracing the gain curve for this taper across `rect`.
