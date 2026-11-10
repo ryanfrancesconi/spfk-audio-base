@@ -4,7 +4,7 @@ import Foundation
 import SPFKBase
 
 /// One independently renderable part of an ``AudioEditDescription``, in pipeline order.
-public enum AudioEditKind: String, Hashable, Sendable, CaseIterable {
+public enum AudioEditKind: String, Hashable, Sendable, CaseIterable, Codable {
     case trim
     case channels
     case reverse
