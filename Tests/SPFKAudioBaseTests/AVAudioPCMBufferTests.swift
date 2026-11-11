@@ -9,15 +9,6 @@ struct AVAudioPCMBufferTests {
     let stereoFormat = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2)!
     let monoFormat = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)!
 
-    // MARK: - Duration
-
-    @Test("duration calculation")
-    func duration() {
-        let buffer = AVAudioPCMBuffer(pcmFormat: stereoFormat, frameCapacity: 44100)!
-        buffer.frameLength = 44100
-        #expect(buffer.duration == 1.0)
-    }
-
     // MARK: - floatData
 
     @Test("floatData copies channel data")

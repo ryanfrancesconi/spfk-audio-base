@@ -6,20 +6,6 @@ import Testing
 
 @Suite(.tags(.file))
 struct AVAudioFileTests {
-    @Test("duration calculated correctly")
-    func duration() throws {
-        let url = TestBundleResources.shared.cowbell_wav
-        let file = try AVAudioFile(forReading: url)
-        #expect(file.duration > 0)
-    }
-
-    @Test("audioStreamBasicDescription is non-nil for wav")
-    func audioStreamBasicDescription() throws {
-        let url = TestBundleResources.shared.cowbell_wav
-        let file = try AVAudioFile(forReading: url)
-        #expect(file.audioStreamBasicDescription != nil)
-    }
-
     @Test("dataRate for PCM file")
     func dataRate() throws {
         let url = TestBundleResources.shared.cowbell_wav

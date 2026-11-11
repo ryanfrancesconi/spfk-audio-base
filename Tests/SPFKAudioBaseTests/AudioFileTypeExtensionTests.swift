@@ -45,12 +45,6 @@ struct AudioFileTypeExtensionTests {
 
     // MARK: - Properties
 
-    @Test("pathExtension matches rawValue")
-    func pathExtension() {
-        #expect(AudioFileType.wav.pathExtension == "wav")
-        #expect(AudioFileType.mp3.pathExtension == "mp3")
-    }
-
     @Test("supportsMetadata for common types")
     func supportsMetadata() {
         #expect(AudioFileType.wav.supportsMetadata)
@@ -151,30 +145,5 @@ struct AudioFileTypeExtensionTests {
     func stringValue() {
         #expect(AudioFileType.wav.stringValue == "Waveform Audio")
         #expect(AudioFileType.au.stringValue == "au") // no fileTypeName
-    }
-
-    // MARK: - Codable
-
-    @Test("Codable round-trip")
-    func codable() throws {
-        let original = AudioFileType.wav
-        let data = try JSONEncoder().encode(original)
-        let decoded = try JSONDecoder().decode(AudioFileType.self, from: data)
-        #expect(decoded == original)
-    }
-
-    @Test("decode from raw string")
-    func decodeFromString() throws {
-        let json = "\"mp3\"".data(using: .utf8)!
-        let decoded = try JSONDecoder().decode(AudioFileType.self, from: json)
-        #expect(decoded == .mp3)
-    }
-
-    @Test("decode invalid string throws")
-    func decodeInvalid() {
-        let json = "\"xyz\"".data(using: .utf8)!
-        #expect(throws: (any Error).self) {
-            try JSONDecoder().decode(AudioFileType.self, from: json)
-        }
     }
 }

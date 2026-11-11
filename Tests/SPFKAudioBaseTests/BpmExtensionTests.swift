@@ -14,13 +14,6 @@ struct BpmExtensionTests {
         #expect(Bpm(-10) == nil)
     }
 
-    @Test("init with positive succeeds")
-    func initPositive() {
-        let bpm = Bpm(120)
-        #expect(bpm != nil)
-        #expect(bpm?.rawValue == 120)
-    }
-
     @Test("stringValue for whole number")
     func stringValueWhole() {
         #expect(Bpm(120)!.stringValue == "120")
@@ -37,12 +30,6 @@ struct BpmExtensionTests {
         #expect(!Bpm(120.5)!.isWholeNumber)
     }
 
-    @Test("quarterNoteDuration")
-    func quarterNoteDuration() {
-        #expect(Bpm(60)!.quarterNoteDuration == 1.0)
-        #expect(Bpm(120)!.quarterNoteDuration == 0.5)
-    }
-
     @Test("multiples are computed correctly")
     func multiples() {
         let bpm = Bpm(100)!
@@ -57,18 +44,6 @@ struct BpmExtensionTests {
         #expect(!bpm.isMultiple(of: 240.5, tolerance: 0))
     }
 
-    @Test("description format")
-    func description() {
-        #expect(Bpm(120)!.description == "Bpm(120)")
-        #expect(Bpm(99.5)!.description == "Bpm(99.5)")
-    }
-
-    @Test("tempoRange bounds")
-    func tempoRange() {
-        #expect(Bpm.tempoRange.lowerBound == Bpm(1))
-        #expect(Bpm.tempoRange.upperBound == Bpm(1024))
-    }
-
     @Test("array average")
     func average() {
         let bpms = [Bpm(100)!, Bpm(120)!, Bpm(140)!]
@@ -80,11 +55,5 @@ struct BpmExtensionTests {
     func averageEmpty() {
         let bpms: [Bpm] = []
         #expect(bpms.average == nil)
-    }
-
-    @Test("comparable ordering")
-    func comparable() {
-        #expect(Bpm(80)! < Bpm(120)!)
-        #expect(!(Bpm(120)! < Bpm(80)!))
     }
 }

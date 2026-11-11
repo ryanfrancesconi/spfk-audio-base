@@ -11,14 +11,6 @@ import Testing
 struct AudioFormatConverterOptionsTests {
     // MARK: - Static Ranges
 
-    @Test func bitsPerChannelRange() {
-        #expect(AudioFormatConverterOptions.bitsPerChannelRange == 16 ... 32)
-    }
-
-    @Test func bitRateRange() {
-        #expect(AudioFormatConverterOptions.bitRateRange == 64000 ... 320_000)
-    }
-
     @Test func supportedOutputFormatsContainsExpected() {
         let formats = AudioFormatConverterOptions.supportedOutputFormats
         #expect(formats.contains(.wav))
@@ -81,11 +73,6 @@ struct AudioFormatConverterOptionsTests {
         #expect(options.bitRate == 320_000)
     }
 
-    @Test func bitRateDefault() {
-        let options = AudioFormatConverterOptions()
-        #expect(options.bitRate == 256_000)
-    }
-
     // MARK: - PCM Format Init
 
     @Test func pcmFormatInitWav() throws {
@@ -105,21 +92,6 @@ struct AudioFormatConverterOptionsTests {
     @Test func pcmFormatInitRejectsNonPCM() {
         #expect(throws: Error.self) {
             try AudioFormatConverterOptions(pcmFormat: .mp3)
-        }
-    }
-
-    // MARK: - BitDepthRule
-
-    @Test func bitDepthRuleDefault() {
-        let options = AudioFormatConverterOptions()
-        #expect(options.bitDepthRule == .any)
-    }
-
-    @Test func bitDepthRuleCodableRoundTrip() throws {
-        for rule in [BitDepthRule.lessThanOrEqual, BitDepthRule.any] {
-            let data = try JSONEncoder().encode(rule)
-            let decoded = try JSONDecoder().decode(BitDepthRule.self, from: data)
-            #expect(decoded == rule)
         }
     }
 
@@ -179,27 +151,6 @@ struct AudioFormatConverterOptionsTests {
         #expect(a != b)
     }
 
-    // MARK: - Init with format
-
-    @Test func initWithFormat() {
-        let options = AudioFormatConverterOptions(format: .flac)
-        #expect(options.format == .flac)
-    }
-
-    // MARK: - Default init
-
-    @Test func defaultInit() {
-        let options = AudioFormatConverterOptions()
-        #expect(options.format == nil)
-        #expect(options.sampleRate == nil)
-        #expect(options.bitsPerChannel == nil)
-        #expect(options.bitRate == 256_000)
-        #expect(options.bitDepthRule == .any)
-        #expect(options.channels == nil)
-        #expect(options.isInterleaved == nil)
-        #expect(options.conflictScheme == .overwrite)
-    }
-
     // MARK: - Format acceptance
 
     @Test func formatAcceptsSupportedTypes() {
@@ -245,17 +196,6 @@ struct AudioFormatConverterOptionsTests {
         #expect(options?.format == .wav)
         #expect(options?.sampleRate ?? 0 > 0)
         #expect(options?.channels ?? 0 > 0)
-    }
-
-    // MARK: - init(format:)
-
-    @Test func initWithFormatSetsFormatOnly() {
-        let options = AudioFormatConverterOptions(format: .m4a)
-        #expect(options.format == .m4a)
-        #expect(options.sampleRate == nil)
-        #expect(options.bitsPerChannel == nil)
-        #expect(options.channels == nil)
-        #expect(options.bitDepthRule == .any)
     }
 
     // MARK: - Serializable

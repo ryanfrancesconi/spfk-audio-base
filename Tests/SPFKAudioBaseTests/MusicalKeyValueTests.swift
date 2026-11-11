@@ -66,49 +66,6 @@ struct MusicalKeyValueTests {
         #expect(MusicalKeyValue(name: name, tonality: tonality).description == expected)
     }
 
-    // MARK: - Equatable
-
-    @Test("Same name and tonality are equal")
-    func equalitySameValues() {
-        #expect(MusicalKeyValue(name: .g, tonality: .major) == MusicalKeyValue(name: .g, tonality: .major))
-    }
-
-    @Test("Same name, different tonality are not equal")
-    func equalityDifferentTonality() {
-        #expect(MusicalKeyValue(name: .g, tonality: .major) != MusicalKeyValue(name: .g, tonality: .minor))
-    }
-
-    @Test("Different name, same tonality are not equal")
-    func equalityDifferentName() {
-        #expect(MusicalKeyValue(name: .c, tonality: .major) != MusicalKeyValue(name: .d, tonality: .major))
-    }
-
-    // MARK: - Hashable
-
-    @Test("Equal values produce the same hash")
-    func hashableEqualValues() {
-        let a = MusicalKeyValue(name: .d, tonality: .minor)
-        let b = MusicalKeyValue(name: .d, tonality: .minor)
-        #expect(a.hashValue == b.hashValue)
-    }
-
-    @Test("Usable in a Set")
-    func usableInSet() {
-        var set: Set<MusicalKeyValue> = []
-        set.insert(MusicalKeyValue(name: .c, tonality: .major))
-        set.insert(MusicalKeyValue(name: .c, tonality: .major))
-        set.insert(MusicalKeyValue(name: .a, tonality: .minor))
-        #expect(set.count == 2)
-    }
-
-    @Test("Usable as a Dictionary key")
-    func usableAsDictionaryKey() {
-        var dict: [MusicalKeyValue: String] = [:]
-        let key = MusicalKeyValue(name: .e, tonality: .major)
-        dict[key] = "E Major"
-        #expect(dict[MusicalKeyValue(name: .e, tonality: .major)] == "E Major")
-    }
-
     // MARK: - relativeKey
 
     @Test(

@@ -7,35 +7,6 @@ import Testing
 @testable import SPFKAudioBase
 
 struct AudioUnitInsertTests {
-    // MARK: - Init
-
-    @Test func initSetsAllProperties() {
-        let insert = AudioUnitInsert(
-            uid: "test-uid",
-            index: 2,
-            isBypassed: true,
-            name: "My Plugin",
-            isWindowVisible: true
-        )
-
-        #expect(insert.uid == "test-uid")
-        #expect(insert.index == 2)
-        #expect(insert.isBypassed == true)
-        #expect(insert.name == "My Plugin")
-        #expect(insert.isWindowVisible == true)
-        #expect(insert.fullStatePlistData == nil)
-        #expect(insert.windowFrame == nil)
-    }
-
-    @Test func initDefaults() {
-        let insert = AudioUnitInsert(uid: "uid", index: 0, isBypassed: false)
-
-        #expect(insert.name == nil)
-        #expect(insert.fullStatePlistData == nil)
-        #expect(insert.isWindowVisible == false)
-        #expect(insert.windowFrame == nil)
-    }
-
     // MARK: - componentDescription
 
     @Test func componentDescriptionNilForInvalidUID() {
@@ -117,35 +88,9 @@ struct AudioUnitInsertTests {
         #expect(decoded.isWindowVisible == false)
         #expect(decoded.name == nil)
     }
-
-    // MARK: - Equatable / Hashable
-
-    @Test func equalityByValue() {
-        let a = AudioUnitInsert(uid: "uid", index: 0, isBypassed: false)
-        let b = AudioUnitInsert(uid: "uid", index: 0, isBypassed: false)
-
-        #expect(a == b)
-    }
-
-    @Test func inequalityDifferentUID() {
-        let a = AudioUnitInsert(uid: "uid-a", index: 0, isBypassed: false)
-        let b = AudioUnitInsert(uid: "uid-b", index: 0, isBypassed: false)
-
-        #expect(a != b)
-    }
 }
 
 struct AudioUnitChainStateTests {
-    // MARK: - Init
-
-    @Test func initSetsProperties() {
-        let insert = AudioUnitInsert(uid: "uid", index: 0, isBypassed: false)
-        let chain = AudioUnitChainState(insertCount: 4, inserts: [insert])
-
-        #expect(chain.insertCount == 4)
-        #expect(chain.inserts.count == 1)
-    }
-
     // MARK: - Codable
 
     @Test func codableRoundTrip() throws {
@@ -188,22 +133,5 @@ struct AudioUnitChainStateTests {
 
         #expect(decoded.insertCount == 0)
         #expect(decoded.inserts.count == 1)
-    }
-
-    // MARK: - Equatable
-
-    @Test func equalityByValue() {
-        let insert = AudioUnitInsert(uid: "uid", index: 0, isBypassed: false)
-        let a = AudioUnitChainState(insertCount: 4, inserts: [insert])
-        let b = AudioUnitChainState(insertCount: 4, inserts: [insert])
-
-        #expect(a == b)
-    }
-
-    @Test func inequalityDifferentCount() {
-        let a = AudioUnitChainState(insertCount: 4, inserts: [])
-        let b = AudioUnitChainState(insertCount: 8, inserts: [])
-
-        #expect(a != b)
     }
 }

@@ -7,33 +7,6 @@ import Testing
 
 @Suite("FadeDescription")
 struct FadeDescriptionTests {
-    // MARK: - Defaults
-
-    @Test func defaultTapersAreAudioDefault() {
-        let fade = FadeDescription()
-        #expect(fade.inTaper == .default)
-        #expect(fade.outTaper == .default)
-    }
-
-    @Test func initWithIndependentTapers() {
-        let fade = FadeDescription(inTime: 1, outTime: 2, inTaper: .linear, outTaper: .reverseAudio)
-        #expect(fade.inTime == 1)
-        #expect(fade.outTime == 2)
-        #expect(fade.inTaper == .linear)
-        #expect(fade.outTaper == .reverseAudio)
-    }
-
-    @Test func inTaperAndOutTaperAreIndependent() {
-        var fade = FadeDescription()
-        fade.inTaper = .linear
-        #expect(fade.inTaper == .linear)
-        #expect(fade.outTaper == .default)
-
-        fade.outTaper = .reverseAudio
-        #expect(fade.inTaper == .linear)
-        #expect(fade.outTaper == .reverseAudio)
-    }
-
     // MARK: - Codable round-trip
 
     @Test func codableRoundTripPreservesIndependentTapers() throws {

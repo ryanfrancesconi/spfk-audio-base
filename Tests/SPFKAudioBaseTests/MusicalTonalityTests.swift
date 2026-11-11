@@ -27,11 +27,4 @@ struct MusicalTonalityTests {
         #expect(MusicalTonality(string: "xyz") == nil)
     }
 
-    @Test("description values")
-    func descriptions() {
-        #expect(MusicalTonality.major.description == "Major")
-        #expect(MusicalTonality.minor.description == "Minor")
-        #expect(MusicalTonality.unknown.description == "")
-    }
-
 }

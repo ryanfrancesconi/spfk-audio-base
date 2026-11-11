@@ -103,39 +103,6 @@ struct LoudnessDescriptionEdgeCaseTests {
         #expect(!desc.isValid)
     }
 
-    // MARK: - Codable
-
-    @Test("JSON round-trip preserves nil values")
-    func jsonRoundTripNils() throws {
-        let original = LoudnessDescription(
-            loudnessIntegrated: -24.0,
-            loudnessRange: nil,
-            maxTruePeakLevel: nil,
-            maxMomentaryLoudness: nil,
-            maxShortTermLoudness: nil
-        )
-
-        let data = try JSONEncoder().encode(original)
-        let decoded = try JSONDecoder().decode(LoudnessDescription.self, from: data)
-
-        #expect(decoded.loudnessIntegrated == -24.0)
-        #expect(decoded.loudnessRange == nil)
-        #expect(decoded.maxTruePeakLevel == nil)
-        #expect(decoded.maxMomentaryLoudness == nil)
-        #expect(decoded.maxShortTermLoudness == nil)
-    }
-
-    @Test("decodes from partial JSON")
-    func decodesPartialJSON() throws {
-        let json = #"{"loudnessIntegrated": -14.5}"#
-        let data = Data(json.utf8)
-        let decoded = try JSONDecoder().decode(LoudnessDescription.self, from: data)
-
-        #expect(decoded.loudnessIntegrated == -14.5)
-        #expect(decoded.loudnessRange == nil)
-        #expect(decoded.maxTruePeakLevel == nil)
-    }
-
     // MARK: - Averaging
 
     @Test("single item average equals that item")

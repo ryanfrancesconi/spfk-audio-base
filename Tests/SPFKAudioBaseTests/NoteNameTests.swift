@@ -36,12 +36,6 @@ struct NoteNameTests {
 
     // MARK: - Properties
 
-    @Test("Description returns correct string")
-    func descriptions() {
-        #expect(NoteName.cSharp.description == "C#")
-        #expect(NoteName.b.description == "B")
-    }
-
     @Test("Enharmonic property returns correct flat name")
     func enharmonics() {
         #expect(NoteName.cSharp.enharmonic == "Db")

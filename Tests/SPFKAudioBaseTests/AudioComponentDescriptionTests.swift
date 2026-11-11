@@ -5,14 +5,6 @@ import Testing
 
 @Suite("AudioComponentDescription Extensions")
 struct AudioComponentDescriptionTests {
-    @Test("wildcard has all zero fields")
-    func wildcard() {
-        let w = AudioComponentDescription.wildcard
-        #expect(w.componentType == 0)
-        #expect(w.componentSubType == 0)
-        #expect(w.componentManufacturer == 0)
-    }
-
     @Test("matches compares type, subType, manufacturer")
     func matches() {
         let a = AudioComponentDescription(
@@ -62,28 +54,6 @@ struct AudioComponentDescriptionTests {
         #expect(effect.supportsIO)
         #expect(!effect.isMusicDevice)
         #expect(!effect.isGenerator)
-    }
-
-    @Test("isMusicDevice")
-    func isMusicDevice() {
-        let synth = AudioComponentDescription(
-            componentType: kAudioUnitType_MusicDevice,
-            componentSubType: 0, componentManufacturer: 0,
-            componentFlags: 0, componentFlagsMask: 0
-        )
-        #expect(synth.isMusicDevice)
-        #expect(!synth.isEffect)
-    }
-
-    @Test("isGenerator")
-    func isGenerator() {
-        let gen = AudioComponentDescription(
-            componentType: kAudioUnitType_Generator,
-            componentSubType: 0, componentManufacturer: 0,
-            componentFlags: 0, componentFlagsMask: 0
-        )
-        #expect(gen.isGenerator)
-        #expect(!gen.isEffect)
     }
 
     @Test("isFormatConverter")

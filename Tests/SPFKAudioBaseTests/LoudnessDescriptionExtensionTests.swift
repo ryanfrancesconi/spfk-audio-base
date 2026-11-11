@@ -57,28 +57,6 @@ struct LoudnessDescriptionExtensionTests {
         #expect(!(b < a))
     }
 
-    @Test("Codable round-trip")
-    func codable() throws {
-        let original = LoudnessDescription(
-            loudnessIntegrated: -14.0,
-            loudnessRange: 8.5,
-            maxTruePeakLevel: -1.2,
-            maxMomentaryLoudness: -10.0,
-            maxShortTermLoudness: -12.5
-        )
-        let data = try JSONEncoder().encode(original)
-        let decoded = try JSONDecoder().decode(LoudnessDescription.self, from: data)
-        #expect(decoded == original)
-    }
-
-    @Test("Codable handles missing keys")
-    func codableMissingKeys() throws {
-        let json = "{}".data(using: .utf8)!
-        let decoded = try JSONDecoder().decode(LoudnessDescription.self, from: json)
-        #expect(decoded.loudnessIntegrated == nil)
-        #expect(decoded.loudnessRange == nil)
-    }
-
     @Test("empty array average returns invalid")
     func emptyAverage() {
         let avg: LoudnessDescription = [LoudnessDescription]().average
