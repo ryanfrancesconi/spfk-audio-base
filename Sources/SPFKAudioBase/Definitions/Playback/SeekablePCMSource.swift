@@ -28,5 +28,5 @@ public protocol SeekablePCMSource: SequentialPCMSource, Sendable {
     /// conforming type is expected to decode from the boundary at or before `frame` and discard the
     /// difference, rather than reporting that boundary as the new position. A caller scrubbing a
     /// waveform has no way to compensate for a position that is only approximately where it asked.
-    func seek(toFrame frame: AVAudioFramePosition) throws
+    func seek(toFrame frame: AVAudioFramePosition) async throws
 }
