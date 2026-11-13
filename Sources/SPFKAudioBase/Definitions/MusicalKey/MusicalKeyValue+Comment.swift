@@ -39,7 +39,7 @@ extension MusicalKeyValue {
     }
 
     /// The file's key: `initialKey` when it holds any text, otherwise a key leading the comment.
-    /// Returns nil when the text that applies does not parse — an unreadable `initialKey` is not
+    /// Returns nil when the text that applies does not parse - an unreadable `initialKey` is not
     /// passed over for the comment.
     public static func resolve(initialKey: String?, comment: String?) -> ResolvedMusicalKey? {
         if let initialKey, !initialKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {

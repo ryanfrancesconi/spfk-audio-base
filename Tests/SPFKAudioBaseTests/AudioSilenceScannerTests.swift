@@ -97,7 +97,7 @@ struct AudioSilenceScannerTests {
     func nonSilentRegionsTwoRegions() async throws {
         let leadSilence = 1000
         let region1Length = 2000
-        let gapSilence = 5000   // ~113ms at 44.1kHz — above minimumSilenceDuration of 50ms
+        let gapSilence = 5000   // ~113ms at 44.1kHz - above minimumSilenceDuration of 50ms
         let region2Length = 2000
         let trailSilence = 1000
 
@@ -129,7 +129,7 @@ struct AudioSilenceScannerTests {
     @Test("nonSilentRegions bridges a gap shorter than minimum silence duration into one region")
     func nonSilentRegionsBridgesShortGap() async throws {
         let block1 = 2000
-        let gap = 100   // ~2ms at 44.1kHz — below minimumSilenceDuration of 100ms
+        let gap = 100   // ~2ms at 44.1kHz - below minimumSilenceDuration of 100ms
         let block2 = 2000
 
         let (url, _) = try AudioTestFile.make(segments: [

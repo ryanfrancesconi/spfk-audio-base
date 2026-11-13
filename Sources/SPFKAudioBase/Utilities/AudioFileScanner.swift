@@ -199,7 +199,7 @@ public typealias AudioFileScannerEventHandler = @Sendable (AudioFileScannerEvent
 /// Not `Sendable` because the ``data`` case contains a raw pointer to the PCM sample buffer,
 /// which is only valid for the duration of the callback.
 public enum AudioFileScannerEvent {
-    /// Scanning progress (0–1), emitted before each buffer read.
+    /// Scanning progress (0-1), emitted before each buffer read.
     case progress(url: URL, value: UnitInterval)
     /// Periodic progress checkpoint, emitted at the interval specified by
     /// `sendPeriodicProgressEvery`. Useful for running intermediate analysis.

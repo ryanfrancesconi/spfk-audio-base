@@ -38,7 +38,7 @@ public struct FadeDescription: Equatable, Sendable {
 extension FadeDescription: Codable {
     private enum CodingKeys: String, CodingKey {
         case inTime, outTime, inTaper, outTaper
-        // Legacy key — present in JSON written before inTaper/outTaper were split.
+        // Legacy key - present in JSON written before inTaper/outTaper were split.
         case taper
     }
 

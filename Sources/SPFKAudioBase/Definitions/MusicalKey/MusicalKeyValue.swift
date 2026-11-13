@@ -17,7 +17,7 @@ public struct MusicalKeyValue: Sendable, Hashable, Equatable, CustomStringConver
         "\(name) \(tonality)"
     }
 
-    /// The numeric key index used by the detection pipeline, 0–23.
+    /// The numeric key index used by the detection pipeline, 0-23.
     public var keyIndex: Int32 {
         var value = name.rawValue
 
@@ -28,8 +28,8 @@ public struct MusicalKeyValue: Sendable, Hashable, Equatable, CustomStringConver
         return value
     }
 
-    /// Splits the pipeline's key index into a note name and a tonality: 0–11 is C Major through B
-    /// Major, 12–23 C Minor through B Minor. The pipeline's 24 ("no chord") has no value here and
+    /// Splits the pipeline's key index into a note name and a tonality: 0-11 is C Major through B
+    /// Major, 12-23 C Minor through B Minor. The pipeline's 24 ("no chord") has no value here and
     /// returns `nil`, as does anything out of range.
     public init?(keyIndex: Int32) {
         guard keyIndex >= 0, keyIndex <= 23 else {
@@ -54,7 +54,7 @@ public struct MusicalKeyValue: Sendable, Hashable, Equatable, CustomStringConver
 // swiftformat:disable consecutiveSpaces
 
 extension MusicalKeyValue {
-    /// The relative major or minor key — C Major → A Minor, A Minor → C Major.
+    /// The relative major or minor key - C Major → A Minor, A Minor → C Major.
     public var relativeKey: MusicalKeyValue {
         switch (name, tonality) {
         // --- Major to Minor

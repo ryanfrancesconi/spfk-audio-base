@@ -43,7 +43,7 @@ class AVAudioPCMBufferProcessingTests {
     }
 
     @Test func peakStereoPicksHighestAcrossChannels() throws {
-        // ch0 peak = 0.5 at frame 1; ch1 peak = 0.9 at frame 2 — result should come from ch1
+        // ch0 peak = 0.5 at frame 1; ch1 peak = 0.9 at frame 2 - result should come from ch1
         let buffer = makeBuffer(channels: [
             [0.1, 0.5, 0.2],
             [0.1, 0.1, -0.9],
@@ -75,7 +75,7 @@ class AVAudioPCMBufferProcessingTests {
         let buffer = makeBuffer(channels: [[0.2, 0.4, -0.4]])
         let result = try buffer.normalize()
         let out = samples(result)
-        // 0.2 / 0.4 == 0.5 — ratio between first and second sample must be preserved
+        // 0.2 / 0.4 == 0.5 - ratio between first and second sample must be preserved
         #expect(abs(out[0] / out[1] - 0.5) < 1e-5)
     }
 
@@ -203,14 +203,14 @@ class AVAudioPCMBufferProcessingTests {
     // MARK: - extract()
 
     @Test func extractProducesCorrectFrameCount() throws {
-        // 10 frames at 10 Hz = 1 second total. Extract 0.2 s – 0.7 s = 5 frames.
+        // 10 frames at 10 Hz = 1 second total. Extract 0.2 s - 0.7 s = 5 frames.
         let buffer = makeBuffer(channels: [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]], sampleRate: 10)
         let result = try buffer.extract(from: 0.2, to: 0.7)
         #expect(result.frameLength == 5)
     }
 
     @Test func extractSampleValuesMatchSource() throws {
-        // Extract frames 2–4 (0.2 s – 0.5 s at 10 Hz). Values should be [2, 3, 4].
+        // Extract frames 2-4 (0.2 s - 0.5 s at 10 Hz). Values should be [2, 3, 4].
         let buffer = makeBuffer(channels: [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]], sampleRate: 10)
         let result = try buffer.extract(from: 0.2, to: 0.5)
         #expect(samples(result) == [2, 3, 4])
@@ -268,7 +268,7 @@ class AVAudioPCMBufferProcessingTests {
     // MARK: - applying(_:) de-click fades
 
     @Test func applyingTrimDeClicksStartAndEnd() throws {
-        // All-ones at 44100 Hz, 1 s total. Trim to 0–0.5 s.
+        // All-ones at 44100 Hz, 1 s total. Trim to 0-0.5 s.
         // No explicit fade, so the 5 ms de-click must attenuate the first and last samples.
         let sampleRate: Double = 44100
         let buffer = makeBuffer(
@@ -278,7 +278,7 @@ class AVAudioPCMBufferProcessingTests {
         let edit = AudioEditDescription(trim: TrimDescription(inPoint: 0, outPoint: 0.5))
         let result = try buffer.applying(edit)
         let out = samples(result)
-        // First sample is inside the 5 ms fade-in — must be well below 1.
+        // First sample is inside the 5 ms fade-in - must be well below 1.
         #expect(out[0] < 0.1)
         // The last sample is one frame before the 5 ms fade-out reaches silence.
         let deClickFrames = 0.005 * sampleRate
@@ -301,9 +301,9 @@ class AVAudioPCMBufferProcessingTests {
         )
         let result = try buffer.applying(edit)
         let out = samples(result)
-        // Mid-way through the 0.1 s fade — still rising.
+        // Mid-way through the 0.1 s fade - still rising.
         #expect(out[Int(sampleRate * 0.05)] < 1.0)
-        // Just past the 0.1 s fade boundary — at full gain.
+        // Just past the 0.1 s fade boundary - at full gain.
         #expect(out[Int(sampleRate * 0.11)] > 0.99)
     }
 
@@ -320,7 +320,7 @@ class AVAudioPCMBufferProcessingTests {
         let buffer = makeBuffer(channels: [input])
         let result = try buffer.loop(numberOfDuplicates: 2)
         let out = samples(result)
-        // Second copy starts at frame 3 — must equal frame 0 of the original
+        // Second copy starts at frame 3 - must equal frame 0 of the original
         #expect(out[3] == out[0])
     }
 }

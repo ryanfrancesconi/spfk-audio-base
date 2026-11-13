@@ -17,7 +17,7 @@ struct SegmentDetectorTests {
 
     @Test("two audio regions separated by a gap above minimumSilenceDuration produce two segments")
     func twoSegmentsWithLongGap() async throws {
-        // Gap: 8820 frames = 200 ms at 44100 Hz — exceeds minimumSilenceDuration of 100 ms.
+        // Gap: 8820 frames = 200 ms at 44100 Hz - exceeds minimumSilenceDuration of 100 ms.
         let (url, _) = try AudioTestFile.make(segments: [
             (4410, audioLevel), // 100 ms audio
             (8820, 0.0),        // 200 ms silence
@@ -36,7 +36,7 @@ struct SegmentDetectorTests {
 
     @Test("two audio regions separated by a gap below minimumSilenceDuration are bridged into one segment")
     func shortGapIsBridged() async throws {
-        // Gap: 2205 frames = 50 ms — below minimumSilenceDuration of 100 ms.
+        // Gap: 2205 frames = 50 ms - below minimumSilenceDuration of 100 ms.
         let (url, _) = try AudioTestFile.make(segments: [
             (4410, audioLevel),
             (2205, 0.0),
@@ -55,13 +55,13 @@ struct SegmentDetectorTests {
 
     @Test("segment shorter than minimumSegmentDuration is discarded")
     func shortSegmentFiltered() async throws {
-        // Middle segment: 882 frames ≈ 20 ms — below minimumSegmentDuration of 50 ms.
+        // Middle segment: 882 frames ≈ 20 ms - below minimumSegmentDuration of 50 ms.
         let (url, _) = try AudioTestFile.make(segments: [
-            (4410, audioLevel), // 100 ms — kept
+            (4410, audioLevel), // 100 ms - kept
             (8820, 0.0),
-            (882, audioLevel),  // ~20 ms — discarded
+            (882, audioLevel),  // ~20 ms - discarded
             (8820, 0.0),
-            (4410, audioLevel), // 100 ms — kept
+            (4410, audioLevel), // 100 ms - kept
         ])
         defer { try? FileManager.default.removeItem(at: url) }
 
@@ -210,12 +210,12 @@ struct SegmentDetectorTests {
 
     @Test("padding is applied before minimum-duration filter so it can rescue an otherwise-discarded segment")
     func paddingRescuesShortSegment() async throws {
-        // Raw audio: 441 frames ≈ 10 ms — below minimumSegmentDuration of 100 ms without padding.
+        // Raw audio: 441 frames ≈ 10 ms - below minimumSegmentDuration of 100 ms without padding.
         // With 50 ms pre-roll + 50 ms post-roll the padded window is ≈ 110 ms → passes filter.
         let (url, _) = try AudioTestFile.make(segments: [
-            (4410, 0.0),       // 100 ms leading silence — room for pre-roll
+            (4410, 0.0),       // 100 ms leading silence - room for pre-roll
             (441, audioLevel), // 10 ms audio burst
-            (4410, 0.0),       // 100 ms trailing silence — room for post-roll
+            (4410, 0.0),       // 100 ms trailing silence - room for post-roll
         ])
         defer { try? FileManager.default.removeItem(at: url) }
 

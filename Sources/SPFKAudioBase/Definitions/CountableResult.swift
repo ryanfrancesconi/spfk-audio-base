@@ -77,7 +77,7 @@ public struct CountableResult<T: Hashable & Sendable>: ExpressibleByArrayLiteral
         let count: Int
 
         if let isMatch {
-            // Update groups incrementally — O(groups) per append instead of O(results)
+            // Update groups incrementally - O(groups) per append instead of O(results)
             if let index = groups.firstIndex(where: { isMatch($0.representative, value) }) {
                 groups[index].count += 1
                 count = groups[index].count

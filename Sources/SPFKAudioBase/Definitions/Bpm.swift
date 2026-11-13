@@ -12,13 +12,13 @@ import SPFKBase
 ///
 /// Returns `nil` from the failable initializer if the value is not positive.
 public struct Bpm: Equatable, Sendable, Comparable, Hashable, Codable {
-    /// The valid range of representable tempo values (1–1024 BPM).
+    /// The valid range of representable tempo values (1-1024 BPM).
     public static let tempoRange: ClosedRange<Bpm> = Bpm(1)! ... Bpm(1024)!
 
-    /// 60 BPM — one beat per second.
+    /// 60 BPM - one beat per second.
     public static let bpm60 = Bpm(60)!
 
-    /// 120 BPM — a common default tempo.
+    /// 120 BPM - a common default tempo.
     public static let bpm120 = Bpm(120)!
 
     /// Orders two `Bpm` values by their raw tempo.
@@ -138,7 +138,7 @@ public struct Bpm: Equatable, Sendable, Comparable, Hashable, Codable {
 
     /// Returns a new `Bpm` rounded to `decimalPlaces` decimal places.
     ///
-    /// Use `decimalPlaces: 0` for integer rounding, 1–3 for fractional.
+    /// Use `decimalPlaces: 0` for integer rounding, 1-3 for fractional.
     public func rounded(to decimalPlaces: Int) -> Bpm? {
         guard decimalPlaces > 0 else {
             return Bpm(rawValue.rounded(.toNearestOrAwayFromZero))

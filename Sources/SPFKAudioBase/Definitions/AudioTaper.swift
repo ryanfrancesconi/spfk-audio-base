@@ -7,9 +7,9 @@ import SPFKAudioBaseC
 /// Describes the shape of a fade or gain-ramp curve via a power-law exponent and a blend weight.
 ///
 /// `value` sets the curvature exponent and `skew` blends that power curve with its own
-/// inverse (concave ↔ convex). Every consumer — PCM buffer fading, parameter automation
-/// and the drawn overlay — evaluates ``gain(at:)`` / ``fadeOutGain(at:)``, so a fade renders
-/// as it was auditioned. Use the named presets rather than constructing raw values — the
+/// inverse (concave ↔ convex). Every consumer - PCM buffer fading, parameter automation
+/// and the drawn overlay - evaluates ``gain(at:)`` / ``fadeOutGain(at:)``, so a fade renders
+/// as it was auditioned. Use the named presets rather than constructing raw values - the
 /// two properties are only meaningful together.
 public struct AudioTaper: Codable, Equatable, Sendable {
     /// Power-law exponent. Values > 1 produce a concave (slow-start) curve;
@@ -50,13 +50,13 @@ extension AudioTaper {
 // MARK: - Presets
 
 extension AudioTaper {
-    /// Concave (slow-start) curve — the standard audio fade shape.
+    /// Concave (slow-start) curve - the standard audio fade shape.
     public static let `default` = AudioTaper(value: 3, skew: 1 / 3)
 
-    /// Straight line — no curve applied.
+    /// Straight line - no curve applied.
     public static let linear = AudioTaper(value: 1, skew: 0)
 
-    /// Convex (fast-start) curve — the mirror image of ``default``.
+    /// Convex (fast-start) curve - the mirror image of ``default``.
     public static let reverseAudio = AudioTaper(value: 1 / 3, skew: 1 / 3)
 
     /// All named presets in display order: default → linear → reverseAudio.

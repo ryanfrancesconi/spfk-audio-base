@@ -66,7 +66,7 @@ struct AudioUnitInsertTests {
     }
 
     @Test func decodingThrowsWhenUIDMissing() throws {
-        // JSON with no "uid" key — simulates SwiftData empty container
+        // JSON with no "uid" key - simulates SwiftData empty container
         let json = #"{"index": 0, "isBypassed": false}"#
         let data = json.data(using: .utf8)!
 

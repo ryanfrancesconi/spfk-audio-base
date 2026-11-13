@@ -69,7 +69,7 @@ struct BufferFadeTaperParityTests {
         #expect(abs(out[0][fadeSamples + fadeSamples / 2] - 0.1792) < 1e-3)
     }
 
-    /// `.linear` is the one preset both blends agreed on, so it must stay a straight line —
+    /// `.linear` is the one preset both blends agreed on, so it must stay a straight line -
     /// which is what proves the change is confined to the skew term.
     @Test func linearTaperRendersAStraightLine() throws {
         let fadeSamples = Int(sampleRate)

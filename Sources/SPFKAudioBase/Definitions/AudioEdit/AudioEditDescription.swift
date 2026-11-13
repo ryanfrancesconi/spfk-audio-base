@@ -44,7 +44,7 @@ public struct AudioEditDescription: Equatable, Sendable {
 
     // MARK: -
 
-    /// True when no edit operations are set — the description is a no-op.
+    /// True when no edit operations are set - the description is a no-op.
     public var isEmpty: Bool {
         trim.isEmpty && channels == .none && !isReversed && normalize.isEmpty && fade.isEmpty && timePitch.isEmpty
     }

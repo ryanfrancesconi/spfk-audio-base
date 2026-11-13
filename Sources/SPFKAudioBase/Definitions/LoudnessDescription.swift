@@ -6,7 +6,7 @@ import SwiftExtensions
 
 /// The five EBU R128 loudness metrics for an audio file.
 ///
-/// All properties are optional — a `nil` value means the metric was not measured
+/// All properties are optional - a `nil` value means the metric was not measured
 /// or fell outside the representable range (±99.99). Use ``isValid`` to check
 /// whether at least one meaningful metric is present, and ``validated()`` to
 /// clear any out-of-range values.
@@ -24,19 +24,19 @@ public struct LoudnessDescription: Comparable, Hashable, Sendable, Codable {
         return lhs < rhs
     }
 
-    /// Integrated loudness (LUFS) — the gated, overall program loudness per ITU-R BS.1770-4.
+    /// Integrated loudness (LUFS) - the gated, overall program loudness per ITU-R BS.1770-4.
     public var loudnessIntegrated: Float64?
 
-    /// Loudness range (LU) — the statistical distribution of loudness per EBU Tech 3342.
+    /// Loudness range (LU) - the statistical distribution of loudness per EBU Tech 3342.
     public var loudnessRange: Float64?
 
-    /// Maximum true peak level (dBTP) — the highest inter-sample peak across all channels.
+    /// Maximum true peak level (dBTP) - the highest inter-sample peak across all channels.
     public var maxTruePeakLevel: Float32?
 
-    /// Maximum momentary loudness (LUFS) — the highest value from sliding 400 ms windows.
+    /// Maximum momentary loudness (LUFS) - the highest value from sliding 400 ms windows.
     public var maxMomentaryLoudness: Float64?
 
-    /// Maximum short-term loudness (LUFS) — the highest value from sliding 3 s windows.
+    /// Maximum short-term loudness (LUFS) - the highest value from sliding 3 s windows.
     public var maxShortTermLoudness: Float64?
 
     /// A formatted summary of all metrics, e.g. `"I -24.1 LUFS, TP -0.1 dB, LRA 1.4 LU, M -19.5 LU, S -23.0 LU"`.
@@ -139,7 +139,7 @@ extension [LoudnessDescription] {
     /// The arithmetic mean of each metric across all valid descriptions.
     ///
     /// Invalid descriptions (per ``LoudnessDescription/isValid``) are filtered out
-    /// before averaging. Each metric is averaged independently — if a metric is `nil`
+    /// before averaging. Each metric is averaged independently - if a metric is `nil`
     /// in some descriptions, only the non-nil values contribute to its mean.
     /// Returns an empty (invalid) description if the array contains no valid entries.
     public var average: LoudnessDescription {

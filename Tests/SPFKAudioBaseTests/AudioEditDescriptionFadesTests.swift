@@ -115,7 +115,7 @@ struct AudioEditDescriptionFadesTests {
     }
 
     @Test func selectionFadesStartingAtInPointExactlyIsAllowed() {
-        // Selection starts exactly at inPoint — should trigger fade-in
+        // Selection starts exactly at inPoint - should trigger fade-in
         let trim = TrimDescription(inPoint: 2, outPoint: 8)
         let result = AudioEditDescription.selectionFades(
             selectionStart: 2, selectionEnd: 5, duration: 10, trim: trim
@@ -126,7 +126,7 @@ struct AudioEditDescriptionFadesTests {
     }
 
     @Test func selectionFadesEndingAtOutPointExactlyIsAllowed() {
-        // Selection ends exactly at outPoint — should trigger fade-out
+        // Selection ends exactly at outPoint - should trigger fade-out
         let trim = TrimDescription(inPoint: 2, outPoint: 8)
         let result = AudioEditDescription.selectionFades(
             selectionStart: 5, selectionEnd: 8, duration: 10, trim: trim

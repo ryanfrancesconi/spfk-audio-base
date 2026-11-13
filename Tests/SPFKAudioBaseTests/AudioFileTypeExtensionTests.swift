@@ -82,7 +82,7 @@ struct AudioFileTypeExtensionTests {
     }
 
     /// The listing of a file's audio tracks is gated on this alone, so anything `isVideo` answers
-    /// yes to has to be here — or a video container loses its picker on a property meant to widen
+    /// yes to has to be here - or a video container loses its picker on a property meant to widen
     /// the set.
     @Test("multi-audio-track types cover every video type")
     func multiAudioTrackTypesCoverVideo() {

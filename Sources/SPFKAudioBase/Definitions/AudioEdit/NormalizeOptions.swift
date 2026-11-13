@@ -5,7 +5,7 @@ import Foundation
 /// Parameters for a normalization analysis pass.
 ///
 /// Produced by `NormalizeDialog` and consumed by `NormalizeAnalyzer`. Not stored
-/// per-file — only the resulting `NormalizeDescription.gain` is persisted on
+/// per-file - only the resulting `NormalizeDescription.gain` is persisted on
 /// `PlaylistElement.audioEditDescription.normalize`.
 public struct NormalizeOptions: Codable, Sendable {
     public var mode: NormalizeMode

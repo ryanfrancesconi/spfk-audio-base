@@ -23,11 +23,11 @@ public struct NormalizeDescription: Equatable, Sendable {
     /// was run in LUFS mode or has not been performed.
     public var measuredPeakdBFS: Float? = nil
 
-    /// Computed linear gain multiplier — the result of the gain clamp calculation. Playback sets it
+    /// Computed linear gain multiplier - the result of the gain clamp calculation. Playback sets it
     /// as the channel gain's own value, which the fade curve multiplies.
     public var gain: AUValue = 1
 
-    /// True when gain is effectively unity — no normalization stored or needed.
+    /// True when gain is effectively unity - no normalization stored or needed.
     public var isEmpty: Bool { abs(gain - 1) < 0.001 }
 
     public init(

@@ -43,7 +43,7 @@ struct AudioFileTypeMXFTests {
         #expect(mxf.supportsMultipleAudioTracks)
     }
 
-    /// Answered by UTType conformance rather than a list — `org.smpte.mxf` conforms to
+    /// Answered by UTType conformance rather than a list - `org.smpte.mxf` conforms to
     /// `public.movie` whether or not anything can read the file.
     @Test("Reports itself a video container")
     func isVideo() {

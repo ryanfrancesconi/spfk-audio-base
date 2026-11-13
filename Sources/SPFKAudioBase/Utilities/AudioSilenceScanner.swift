@@ -130,7 +130,7 @@ public struct AudioSilenceScanner: Sendable {
             guard let data = buffer.floatChannelData else { break }
             let frameLength = Int(buffer.frameLength)
 
-            // Fast path: entire chunk is silent — extend any open silence run without per-frame work.
+            // Fast path: entire chunk is silent - extend any open silence run without per-frame work.
             if !hasAudio(data: data, frameLength: frameLength, channelCount: channelCount) {
                 if regionStart != nil, silenceRunStart == nil {
                     silenceRunStart = position
@@ -147,7 +147,7 @@ public struct AudioSilenceScanner: Sendable {
                 continue
             }
 
-            // Slow path: chunk contains audio — scan per-frame for precise boundary detection.
+            // Slow path: chunk contains audio - scan per-frame for precise boundary detection.
             for i in 0 ..< frameLength {
                 var frameHasAudio = false
                 for ch in 0 ..< channelCount {

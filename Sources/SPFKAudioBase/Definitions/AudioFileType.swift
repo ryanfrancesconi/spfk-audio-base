@@ -6,12 +6,12 @@ import Foundation
 
 // swiftformat:disable consecutiveSpaces
 
-/// Container formats audio can be read from — including the video containers that carry it, which
+/// Container formats audio can be read from - including the video containers that carry it, which
 /// is what puts `.mov`, `.mkv`, `.m4v`, `.webm` and `.ts` here alongside `.wav` and `.mp3`.
 ///
 /// **Membership describes the container, not a file.** An `.mp4` with no audio track is in this
 /// set; confirm with `AVURLAsset.hasAudio()` before treating one as playable. The same split
-/// applies to ``isVideo``, which reports what the container can hold rather than what it does —
+/// applies to ``isVideo``, which reports what the container can hold rather than what it does -
 /// `VideoTrackReader` answers that.
 public enum AudioFileType: String, Hashable, CaseIterable, Sendable, Codable {
     case aac
@@ -39,14 +39,14 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable, Codable {
 
     /// File types that are commonly used for metadata storage.
     ///
-    /// `mov`/`m4v` belong here for the same reason `mp4` does — TagLib's MP4 handler reads and
+    /// `mov`/`m4v` belong here for the same reason `mp4` does - TagLib's MP4 handler reads and
     /// writes them, including a QuickTime chapter track for markers. Their earlier absence made
     /// `AudioFormatConverter.copyMetadata()` skip a `.mov` output wholesale, dropping tags,
     /// markers, artwork and Finder tags in one step.
     ///
     /// `mkv`/`webm` likewise: TagLib 2.x ships a full Matroska implementation and `FileRef`
     /// dispatches both by extension, so reads and writes work without a format-specific path.
-    /// AVFoundation cannot open either — that limits playback and thumbnails, not metadata.
+    /// AVFoundation cannot open either - that limits playback and thumbnails, not metadata.
     public static let metadataTypes: [AudioFileType] = [
         .aac,
         .aifc,
@@ -83,7 +83,7 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable, Codable {
     /// Matroska-family containers. WebM is a Matroska profile, so one parser covers both and
     /// nothing downstream needs to tell them apart.
     ///
-    /// **AVFoundation cannot open either** — they are absent from `AVURLAsset.audiovisualTypes()`,
+    /// **AVFoundation cannot open either** - they are absent from `AVURLAsset.audiovisualTypes()`,
     /// and `AVAudioFile(forReading:)` throws `'fmt?'`. So any AV-backed read returns nothing for
     /// them and a caller has to route to the demuxer instead, which is what this answers.
     public static let matroskaTypes: [AudioFileType] = [.mka, .mkv, .webm]
@@ -240,7 +240,7 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable, Codable {
 
     /// Whether `AVAudioFile(forReading:)` can open this container at all.
     ///
-    /// `AVAudioFile` is ExtAudioFile underneath — a different stack from `AVAsset` — so the answer
+    /// `AVAudioFile` is ExtAudioFile underneath - a different stack from `AVAsset` - so the answer
     /// does not follow from whether AVFoundation can play the file. Measured `'fmt?'` failures:
     /// the Matroska profiles, and MXF both before and after `ProVideoFormats.register()`, which
     /// serves format readers to AVAsset and not to AudioToolbox.
@@ -252,7 +252,7 @@ public enum AudioFileType: String, Hashable, CaseIterable, Sendable, Codable {
 
     /// Whether `AVAudioFile` can write this format directly (PCM and AAC containers).
     /// Formats that return `false` require an intermediate converter (e.g. MP3, FLAC, OGG, Opus).
-    /// Unknown formats not represented by this enum default to `true` — AVAudioFile will throw
+    /// Unknown formats not represented by this enum default to `true` - AVAudioFile will throw
     /// if the format is actually unsupported.
     public var isAVAudioFileWritable: Bool {
         switch self {

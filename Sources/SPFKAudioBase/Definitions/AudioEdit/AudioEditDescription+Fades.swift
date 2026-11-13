@@ -86,13 +86,13 @@ extension AudioEditDescription {
     ///
     /// The fade-in applies when the selection starts at or before the trim start (inPoint, or
     /// time 0 when no trim is set). Its duration is measured from the trim start to the selection
-    /// end — not from the selection start — so the fade covers the region actually drawn.
+    /// end - not from the selection start - so the fade covers the region actually drawn.
     ///
     /// The fade-out applies when the selection ends at or after the trim end (outPoint, or the
     /// file duration when no trim is set). Its duration is measured from the selection start to
     /// the trim end for the same reason.
     ///
-    /// Returns `nil` when the selection is fully interior — no trim boundary is touched and no
+    /// Returns `nil` when the selection is fully interior - no trim boundary is touched and no
     /// meaningful fade can be inferred.
     public static func selectionFades(
         selectionStart: TimeInterval,
