@@ -24,6 +24,13 @@ struct AudioTerminologyTests {
     }
 
     /// Never "44100.0 Hz", and never grouped.
+    /// Answers are cached, so the locale has to be part of what a rate is remembered by.
+    @Test func aRateAskedForInTwoLocalesKeepsEachSeparator() {
+        #expect(AudioTerminology.sampleRate(22050, locale: english) == "22.05 kHz")
+        #expect(AudioTerminology.sampleRate(22050, locale: german) == "22,05 kHz")
+        #expect(AudioTerminology.sampleRate(22050, locale: english) == "22.05 kHz")
+    }
+
     @Test func exactRatesAreWholeHertz() {
         #expect(AudioTerminology.sampleRateInHertz(44100) == "44100 Hz")
         #expect(AudioTerminology.sampleRateInHertz(192_000) == "192000 Hz")
